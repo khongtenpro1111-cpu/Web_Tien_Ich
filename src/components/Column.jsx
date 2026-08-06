@@ -124,9 +124,11 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
               <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => setIsEditing(true)}>
                 <Edit2 size={14} />
               </button>
-              <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => onDeleteColumn?.(column.id)}>
-                <Trash2 size={14} />
-              </button>
+              {!column.isDefault && (
+                <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => onDeleteColumn?.(column.id)}>
+                  <Trash2 size={14} />
+                </button>
+              )}
             </>
           )}
         </div>
@@ -138,6 +140,7 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
             <TaskCard 
               key={task.id} 
               task={task} 
+              column={column}
               onEdit={() => onEditTask?.(task)} 
               isSelected={selectedTaskIds.includes(task.id)}
               onSelectTask={onSelectTask}

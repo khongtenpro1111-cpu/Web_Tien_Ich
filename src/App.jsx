@@ -139,7 +139,7 @@ function App() {
       const hasInProgress = docs.some(d => d.id === `${currentUser.uid}_in-progress`);
       const hasDone = docs.some(d => d.id === `${currentUser.uid}_done`);
 
-      // Self-healing: If user is missing ALL 3 default columns (due to being a new user or old columns stolen by the default ID collision bug)
+      // Self-healing: If user is missing ALL 3 default columns
       if (!hasTodo && !hasInProgress && !hasDone) {
         const localCols = localStorage.getItem('kanban-columns');
         const parsedCols = localCols ? JSON.parse(localCols) : initialColumns;
@@ -148,11 +148,20 @@ function App() {
           setDoc(doc(db, 'columns', uniqueId), { 
             ...col, 
             id: uniqueId, 
-            userId: currentUser.uid 
+            userId: currentUser.uid,
+            isDefault: true,
           });
         });
       } else {
-        const colsData = docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const colsData = docs.map(d => {
+          const data = { id: d.id, ...d.data() };
+          // Mark default columns
+          const baseId = d.id.replace(`${currentUser.uid}_`, '');
+          if (['todo', 'in-progress', 'done'].includes(baseId)) {
+            data.isDefault = true;
+          }
+          return data;
+        });
         colsData.sort((a, b) => {
           const orderA = a.order !== undefined ? a.order : initialColumns.findIndex(c => c.id === a.id);
           const orderB = b.order !== undefined ? b.order : initialColumns.findIndex(c => c.id === b.id);
@@ -224,7 +233,10 @@ function App() {
       newTasks.forEach(task => {
         if (task.dueDate && !task.notified) {
           const due = new Date(task.dueDate);
-          if (now >= due && task.columnId !== 'done') {
+          const column = columns.find(c => c.id === task.columnId);
+          const isDoneColumn = column ? (column.id === 'done' || column.id.endsWith('_done') || column.title === 'Hoàn thành') : false;
+
+          if (now >= due && !isDoneColumn) {
             hasOverdue = true;
             task.notified = true;
             changed = true;
@@ -249,7 +261,7 @@ function App() {
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [tasks]);
+  }, [tasks, columns]);
 
   const handleSaveTask = async (taskData) => {
     try {
@@ -310,8 +322,9 @@ function App() {
 
   const handleAddColumn = async (title, color) => {
     try {
+      const currentPlanType = ['day', 'week', 'month', 'year'].includes(viewMode) ? viewMode : 'day';
       const maxOrder = columns.length > 0 ? Math.max(...columns.map(c => c.order || 0)) : 0;
-      await addDoc(collection(db, 'columns'), { title, color, order: maxOrder + 1, userId: currentUser.uid });
+      await addDoc(collection(db, 'columns'), { title, color, order: maxOrder + 1, userId: currentUser.uid, planType: currentPlanType });
       toast.success('Đã thêm cột mới!');
     } catch (e) {
       console.error('Lỗi thêm cột:', e);
@@ -328,17 +341,32 @@ function App() {
   };
 
   const handleDeleteColumn = (colId) => {
+    // Block deletion of default columns
+    const col = columns.find(c => c.id === colId);
+    if (col?.isDefault) {
+      toast.error('Không thể xoá cột mặc định! Bạn chỉ có thể chỉnh sửa.');
+      return;
+    }
+
     triggerConfirm(
       'Xóa cột công việc',
-      'Bạn có chắc xoá cột này? Các công việc sẽ mất theo.',
+      'Bạn có chắc xoá cột này? Các công việc trong cột sẽ được chuyển về cột "Cần làm".',
       async () => {
         try {
           const tasksInCol = tasks.filter(t => t.columnId === colId);
+          // Find the default todo column to move tasks there
+          const defaultTodoCol = columns.find(c => c.id === `${currentUser.uid}_todo`) || columns.find(c => c.isDefault);
+
           for (const t of tasksInCol) {
-            await deleteDoc(doc(db, 'tasks', t.id));
+            if (defaultTodoCol) {
+              await updateDoc(doc(db, 'tasks', t.id), { columnId: defaultTodoCol.id });
+            } else {
+              await deleteDoc(doc(db, 'tasks', t.id));
+            }
           }
+
           await deleteDoc(doc(db, 'columns', colId));
-          toast.success('Đã xoá cột!');
+          toast.success('Đã xoá cột! Công việc đã chuyển về "Cần làm".');
         } catch (e) {
           toast.error('Lỗi xoá cột');
         }
@@ -347,6 +375,8 @@ function App() {
   };
 
   // Bulk Actions
+
+
   const toggleTaskSelection = (taskId) => {
     setSelectedTaskIds(prev => 
       prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
@@ -638,7 +668,7 @@ function App() {
           <KanbanBoard 
             tasks={filteredTasks} 
             setTasks={setTasks}
-            columns={columns} 
+            columns={columns.filter(c => c.isDefault || c.planType === viewMode)} 
             setColumns={setColumns}
             onUpdateTask={async (updatedTask) => {
               try {

@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { createEvent } from 'ics';
 import { Edit2, Calendar, CheckSquare, Bell } from 'lucide-react';
 
-export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
+export default function TaskCard({ task, column, onEdit, isSelected, onSelectTask }) {
   const {
     setNodeRef,
     attributes,
@@ -69,8 +69,9 @@ export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
     );
   }
 
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.columnId !== 'done';
-  const isDueToday = task.dueDate && task.columnId !== 'done' && !isOverdue && new Date(task.dueDate).toDateString() === new Date().toDateString();
+  const isDone = task.columnId === 'done' || task.columnId.endsWith('_done');
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isDone;
+  const isDueToday = task.dueDate && !isDone && !isOverdue && new Date(task.dueDate).toDateString() === new Date().toDateString();
   const priorityClass = task.priority ? `tag-${task.priority}` : 'tag-medium';
   const priorityLabel = task.priority === 'high' ? '🔥 Khẩn cấp' : (task.priority === 'low' ? '🌱 Thấp' : '⚡ Trung bình');
 
@@ -83,7 +84,7 @@ export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
       ref={setNodeRef}
       style={{
         ...style,
-        padding: '1.25rem',
+        padding: '0.75rem',
         cursor: 'grab',
         touchAction: 'none',
         position: 'relative',
@@ -94,15 +95,29 @@ export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
       {...listeners}
       className={`glass-panel card-hover task-card-item ${isOverdue ? 'overdue-pulse shake-animation' : ''}`}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           {onSelectTask && (
             <input 
               type="checkbox" 
               checked={!!isSelected}
               onChange={(e) => { e.stopPropagation(); onSelectTask(task.id); }}
               onPointerDown={(e) => e.stopPropagation()}
-              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+              style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+            />
+          )}
+          {column && (
+            <span
+              title={column.title}
+              style={{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: column.color || '#64748b',
+                flexShrink: 0,
+                boxShadow: `0 0 5px ${column.color || '#64748b'}88`,
+              }}
             />
           )}
           <span className={`tag ${priorityClass}`}>{priorityLabel}</span>
@@ -130,18 +145,18 @@ export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
         </div>
       </div>
       
-      <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>{task.title}</h4>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', whiteSpace: 'pre-wrap', marginBottom: '0.75rem', fontWeight: 500, lineHeight: 1.6 }}>
+      <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.3 }}>{task.title}</h4>
+      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'pre-wrap', marginBottom: '0.4rem', fontWeight: 500, lineHeight: 1.4 }}>
         {task.content}
       </p>
 
       {totalSubtasks > 0 && (
-        <div style={{ marginBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><CheckSquare size={12}/> Tiến độ ({completedSubtasks}/{totalSubtasks})</span>
+        <div style={{ marginBottom: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><CheckSquare size={11}/> Tiến độ ({completedSubtasks}/{totalSubtasks})</span>
             <span>{Math.round(progressPercent)}%</span>
           </div>
-          <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{ width: `${progressPercent}%`, height: '100%', background: progressPercent === 100 ? 'var(--success)' : 'var(--primary)', transition: 'width 0.3s ease' }} />
           </div>
         </div>
@@ -149,7 +164,7 @@ export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
       
       {task.dueDate && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-          <div style={{ fontSize: '0.8rem', color: isOverdue ? 'var(--danger)' : (isDueToday ? 'var(--warning)' : 'var(--text-muted)'), display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: (isOverdue || isDueToday) ? 600 : 400 }}>
+          <div style={{ fontSize: '0.72rem', color: isOverdue ? 'var(--danger)' : (isDueToday ? 'var(--warning)' : 'var(--text-muted)'), display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: (isOverdue || isDueToday) ? 600 : 400 }}>
             {isOverdue || isDueToday ? (
               <Bell size={12} className={isOverdue ? 'bell-ringing-fast' : 'bell-ringing-slow'} />
             ) : (

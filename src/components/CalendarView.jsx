@@ -61,16 +61,85 @@ export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTas
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden', padding: '0 0 1rem 0' }}>
-      <div className="calendar-month-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--glass-bg, rgba(30, 41, 59, 0.65))', backdropFilter: 'blur(20px)', padding: '1rem 1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border, rgba(255,255,255,0.1))' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <CalendarIcon size={24} color="var(--primary)" />
-          Tháng {format(currentMonth, 'MM / yyyy')}
-        </h2>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-ghost" style={{ background: 'var(--input-bg, rgba(255,255,255,0.05))', borderRadius: '20px' }} onClick={goToToday}>Hôm nay</button>
+      <div className="calendar-month-header" style={{
+        display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center',
+        gap: '0.75rem',
+        marginBottom: '1.5rem',
+        background: 'var(--glass-bg, rgba(30, 41, 59, 0.65))',
+        backdropFilter: 'blur(20px)',
+        padding: '0.85rem 1rem',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-md)',
+        border: '1px solid var(--glass-border, rgba(255,255,255,0.1))'
+      }}>
+        {/* Left: Icon + Month/Year selects */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+          <CalendarIcon size={20} color="var(--primary)" />
+          <select
+            value={currentMonth.getMonth()}
+            onChange={(e) => {
+              const d = new Date(currentMonth);
+              d.setMonth(parseInt(e.target.value));
+              setCurrentMonth(d);
+            }}
+            style={{
+              background: 'var(--input-bg, rgba(255,255,255,0.08))',
+              border: '1px solid var(--glass-border, rgba(255,255,255,0.12))',
+              color: 'var(--text-main)',
+              borderRadius: '10px',
+              padding: '0.3rem 0.5rem',
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              outline: 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              textAlignLast: 'center',
+            }}
+          >
+            {['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'].map((m, i) => (
+              <option key={i} value={i}>{m}</option>
+            ))}
+          </select>
+          <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>/</span>
+          <select
+            value={currentMonth.getFullYear()}
+            onChange={(e) => {
+              const d = new Date(currentMonth);
+              d.setFullYear(parseInt(e.target.value));
+              setCurrentMonth(d);
+            }}
+            style={{
+              background: 'var(--input-bg, rgba(255,255,255,0.08))',
+              border: '1px solid var(--glass-border, rgba(255,255,255,0.12))',
+              color: 'var(--text-main)',
+              borderRadius: '10px',
+              padding: '0.3rem 0.5rem',
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              outline: 'none',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              textAlignLast: 'center',
+            }}
+          >
+            {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Right: Today + Prev/Next */}
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexShrink: 0 }}>
+          <button
+            className="btn btn-ghost"
+            style={{ background: 'var(--input-bg, rgba(255,255,255,0.05))', borderRadius: '20px', padding: '0.4rem 0.85rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+            onClick={goToToday}
+          >Hôm nay</button>
           <div style={{ display: 'flex', background: 'var(--input-bg, rgba(255,255,255,0.05))', borderRadius: '20px', overflow: 'hidden' }}>
-            <button className="btn btn-ghost" style={{ padding: '0.5rem 1rem', borderRadius: 0 }} onClick={prevMonth}><ChevronLeft size={20} /></button>
-            <button className="btn btn-ghost" style={{ padding: '0.5rem 1rem', borderRadius: 0 }} onClick={nextMonth}><ChevronRight size={20} /></button>
+            <button className="btn btn-ghost" style={{ padding: '0.4rem 0.75rem', borderRadius: 0 }} onClick={prevMonth}><ChevronLeft size={18} /></button>
+            <button className="btn btn-ghost" style={{ padding: '0.4rem 0.75rem', borderRadius: 0 }} onClick={nextMonth}><ChevronRight size={18} /></button>
           </div>
         </div>
       </div>
