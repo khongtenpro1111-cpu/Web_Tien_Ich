@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, CheckSquare, Square } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns = [] }) {
+export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns = [], defaultPlanType = 'day' }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [columnId, setColumnId] = useState('todo');
+  const [columnId, setColumnId] = useState(columns[0]?.id || 'todo');
   const [priority, setPriority] = useState('medium');
+  const [planType, setPlanType] = useState('day');
   const [subtasks, setSubtasks] = useState([]);
 
   useEffect(() => {
@@ -15,8 +16,9 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
       setTitle(taskToEdit.title || '');
       setContent(taskToEdit.content || '');
       setDueDate(taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '');
-      setColumnId(taskToEdit.columnId || 'todo');
+      setColumnId(taskToEdit.columnId || columns[0]?.id || 'todo');
       setPriority(taskToEdit.priority || 'medium');
+      setPlanType(taskToEdit.planType || 'day');
       setSubtasks(taskToEdit.subtasks || []);
     } else {
       setTitle('');
@@ -24,9 +26,10 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
       setDueDate('');
       setColumnId(columns.length > 0 ? columns[0].id : 'todo');
       setPriority('medium');
+      setPlanType(defaultPlanType || 'day');
       setSubtasks([]);
     }
-  }, [taskToEdit, isOpen, columns]);
+  }, [taskToEdit, isOpen, columns, defaultPlanType]);
 
   if (!isOpen) return null;
 
@@ -39,6 +42,7 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       columnId,
       priority,
+      planType,
       subtasks,
     });
     onClose();
@@ -63,7 +67,7 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+      background: 'var(--backdrop-bg, rgba(0,0,0,0.6))', backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
     }}>
       <div className="glass-panel" style={{ width: '100%', maxWidth: '600px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -74,8 +78,8 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
             <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '150px' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Trạng thái</label>
               <select className="input" value={columnId} onChange={(e) => setColumnId(e.target.value)}>
                 {columns.map(col => (
@@ -83,12 +87,21 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
                 ))}
               </select>
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: '150px' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Độ ưu tiên</label>
               <select className="input" value={priority} onChange={(e) => setPriority(e.target.value)}>
                 <option value="high">🔥 Khẩn cấp</option>
                 <option value="medium">⚡ Trung bình</option>
                 <option value="low">🌱 Thấp</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: '150px' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Loại kế hoạch</label>
+              <select className="input" value={planType} onChange={(e) => setPlanType(e.target.value)}>
+                <option value="day">📅 Kế hoạch Ngày</option>
+                <option value="week">🗂️ Kế hoạch Tuần</option>
+                <option value="month">🗓️ Kế hoạch Tháng</option>
+                <option value="year">📊 Kế hoạch Năm</option>
               </select>
             </div>
           </div>

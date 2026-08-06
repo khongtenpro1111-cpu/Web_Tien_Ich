@@ -8,7 +8,7 @@ import AuthScreen from './components/AuthScreen';
 import TaskModal from './components/TaskModal';
 import UserProfileModal from './components/UserProfileModal';
 import ConfirmModal from './components/ConfirmModal';
-import { Calendar, Bell, Plus, Search, Trash2, MoveRight, Star, Filter, LayoutGrid, CalendarDays, Archive, LogOut } from 'lucide-react';
+import { Calendar, Bell, Plus, Search, Trash2, MoveRight, Star, Filter, LayoutGrid, CalendarDays, Archive, LogOut, Menu, Sun, Moon } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { db, auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -48,29 +48,75 @@ function App() {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'calendar'
+  const [userProfile, setUserProfile] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    type: 'danger',
+    icon: null,
+    onConfirm: () => {},
+  });
+
+  const triggerConfirm = (title, message, onConfirm, confirmText = 'Xác nhận', type = 'danger', icon = null) => {
+    setConfirmConfig({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      type,
+      icon,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const [viewMode, setViewMode] = useState('day'); // 'day' | 'week' | 'month' | 'year' | 'calendar' | 'archive'
   const [loading, setLoading] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Firestore Sync for Scoped Data
   useEffect(() => {
     if (!currentUser) {
       setColumns([]);
       setTasks([]);
+      setUserProfile(null);
       return;
     }
 
-    // Migrate old orphaned tasks/columns that don't have a userId yet
+    const unsubscribeUser = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        setUserProfile(docSnap.data());
+      } else {
+        setUserProfile(null);
+      }
+    });
+
     const migrateOrphanedData = async () => {
       try {
         const tasksSnap = await getDocs(collection(db, 'tasks'));
         tasksSnap.forEach(d => {
           const data = d.data();
-          let updates = {};
-          if (!data.userId) updates.userId = currentUser.uid;
-          if (data.isArchived === undefined) updates.isArchived = false;
-          if (Object.keys(updates).length > 0) {
-            updateDoc(d.ref, updates);
+          if (data.userId === currentUser.uid || !data.userId) {
+            let updates = {};
+            if (!data.userId) updates.userId = currentUser.uid;
+            if (data.isArchived === undefined) updates.isArchived = false;
+            // Migrate task's global default columnId to user-scoped columnId
+            if (['todo', 'in-progress', 'done'].includes(data.columnId)) {
+              updates.columnId = `${currentUser.uid}_${data.columnId}`;
+            }
+            if (Object.keys(updates).length > 0) {
+              updateDoc(d.ref, updates);
+            }
           }
         });
 
@@ -88,15 +134,25 @@ function App() {
 
     const qCols = query(collection(db, 'columns'), where('userId', '==', currentUser.uid));
     const unsubscribeColumns = onSnapshot(qCols, (snapshot) => {
-      if (snapshot.empty) {
-        // Migrate columns from localStorage or use initialColumns
+      const docs = snapshot.docs;
+      const hasTodo = docs.some(d => d.id === `${currentUser.uid}_todo`);
+      const hasInProgress = docs.some(d => d.id === `${currentUser.uid}_in-progress`);
+      const hasDone = docs.some(d => d.id === `${currentUser.uid}_done`);
+
+      // Self-healing: If user is missing ALL 3 default columns (due to being a new user or old columns stolen by the default ID collision bug)
+      if (!hasTodo && !hasInProgress && !hasDone) {
         const localCols = localStorage.getItem('kanban-columns');
         const parsedCols = localCols ? JSON.parse(localCols) : initialColumns;
         parsedCols.forEach(col => {
-          setDoc(doc(db, 'columns', col.id), { ...col, userId: currentUser.uid });
+          const uniqueId = `${currentUser.uid}_${col.id}`;
+          setDoc(doc(db, 'columns', uniqueId), { 
+            ...col, 
+            id: uniqueId, 
+            userId: currentUser.uid 
+          });
         });
       } else {
-        const colsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const colsData = docs.map(doc => ({ id: doc.id, ...doc.data() }));
         colsData.sort((a, b) => {
           const orderA = a.order !== undefined ? a.order : initialColumns.findIndex(c => c.id === a.id);
           const orderB = b.order !== undefined ? b.order : initialColumns.findIndex(c => c.id === b.id);
@@ -116,16 +172,19 @@ function App() {
         const localTasks = localStorage.getItem('kanban-tasks');
         if (localTasks) {
           try {
-            const parsed = JSON.parse(localTasks);
-            parsed.forEach(t => {
-              const { id, ...taskData } = t;
-              // Clean undefined
-              const cleanTask = { ...taskData, userId: currentUser.uid, isArchived: false, notified: false };
-              Object.keys(cleanTask).forEach(key => {
-                if (cleanTask[key] === undefined) delete cleanTask[key];
-              });
-              addDoc(collection(db, 'tasks'), cleanTask).catch(e => console.error(e));
-            });
+             const parsed = JSON.parse(localTasks);
+             parsed.forEach(t => {
+               const { id, ...taskData } = t;
+               // Clean undefined
+               const cleanTask = { ...taskData, userId: currentUser.uid, isArchived: false, notified: false };
+               if (['todo', 'in-progress', 'done'].includes(cleanTask.columnId)) {
+                 cleanTask.columnId = `${currentUser.uid}_${cleanTask.columnId}`;
+               }
+               Object.keys(cleanTask).forEach(key => {
+                 if (cleanTask[key] === undefined) delete cleanTask[key];
+               });
+               addDoc(collection(db, 'tasks'), cleanTask).catch(e => console.error(e));
+             });
             // Xóa localStorage sau khi đã cứu thành công (tuỳ chọn, tạm thời giữ lại để an toàn)
           } catch (e) {
             console.error("Lỗi phục hồi tasks:", e);
@@ -147,6 +206,7 @@ function App() {
     }, 3000);
 
     return () => {
+      unsubscribeUser();
       unsubscribeColumns();
       unsubscribeTasks();
       clearTimeout(fallbackTimer);
@@ -217,8 +277,14 @@ function App() {
     setIsModalOpen(true);
   };
 
+  const refreshUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setCurrentUser({ ...auth.currentUser });
+    }
+  };
+
   const handleLogout = async () => {
-    setIsLogoutModalOpen(false);
     try {
       await signOut(auth);
       toast.success("Đã đăng xuất thành công");
@@ -227,25 +293,29 @@ function App() {
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (window.confirm('Bạn có chắc muốn xoá công việc này?')) {
-      try {
-        await deleteDoc(doc(db, 'tasks', taskId));
-        toast.success('Đã xoá công việc!');
-      } catch (e) {
-        toast.error('Lỗi khi xoá!');
+  const handleDeleteTask = (taskId) => {
+    triggerConfirm(
+      'Xóa công việc',
+      'Bạn có chắc muốn xoá công việc này không?',
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'tasks', taskId));
+          toast.success('Đã xoá công việc!');
+        } catch (e) {
+          toast.error('Lỗi khi xoá!');
+        }
       }
-    }
+    );
   };
 
   const handleAddColumn = async (title, color) => {
     try {
-      const colId = title.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
       const maxOrder = columns.length > 0 ? Math.max(...columns.map(c => c.order || 0)) : 0;
-      await setDoc(doc(db, 'columns', colId), { title, color, order: maxOrder + 1, userId: currentUser.uid });
+      await addDoc(collection(db, 'columns'), { title, color, order: maxOrder + 1, userId: currentUser.uid });
       toast.success('Đã thêm cột mới!');
     } catch (e) {
-      toast.error('Lỗi thêm cột');
+      console.error('Lỗi thêm cột:', e);
+      toast.error('Lỗi thêm cột: ' + e.message);
     }
   };
 
@@ -257,19 +327,23 @@ function App() {
     }
   };
 
-  const handleDeleteColumn = async (colId) => {
-    if (window.confirm('Bạn có chắc xoá cột này? Các công việc sẽ mất theo.')) {
-      try {
-        const tasksInCol = tasks.filter(t => t.columnId === colId);
-        for (const t of tasksInCol) {
-          await deleteDoc(doc(db, 'tasks', t.id));
+  const handleDeleteColumn = (colId) => {
+    triggerConfirm(
+      'Xóa cột công việc',
+      'Bạn có chắc xoá cột này? Các công việc sẽ mất theo.',
+      async () => {
+        try {
+          const tasksInCol = tasks.filter(t => t.columnId === colId);
+          for (const t of tasksInCol) {
+            await deleteDoc(doc(db, 'tasks', t.id));
+          }
+          await deleteDoc(doc(db, 'columns', colId));
+          toast.success('Đã xoá cột!');
+        } catch (e) {
+          toast.error('Lỗi xoá cột');
         }
-        await deleteDoc(doc(db, 'columns', colId));
-        toast.success('Đã xoá cột!');
-      } catch (e) {
-        toast.error('Lỗi xoá cột');
       }
-    }
+    );
   };
 
   // Bulk Actions
@@ -279,14 +353,22 @@ function App() {
     );
   };
 
-  const handleBulkDelete = async () => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedTaskIds.length} công việc đã chọn?`)) {
-      for (const id of selectedTaskIds) {
-        await deleteDoc(doc(db, 'tasks', id));
+  const handleBulkDelete = () => {
+    triggerConfirm(
+      'Xóa nhiều công việc',
+      `Bạn có chắc chắn muốn xóa ${selectedTaskIds.length} công việc đã chọn?`,
+      async () => {
+        try {
+          for (const id of selectedTaskIds) {
+            await deleteDoc(doc(db, 'tasks', id));
+          }
+          setSelectedTaskIds([]);
+          toast.success('Đã xóa hàng loạt!');
+        } catch (e) {
+          toast.error('Lỗi xóa hàng loạt');
+        }
       }
-      setSelectedTaskIds([]);
-      toast.success('Đã xóa hàng loạt!');
-    }
+    );
   };
 
   const handleBulkMove = async (targetCol) => {
@@ -318,6 +400,12 @@ function App() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
+      // Lọc theo loại kế hoạch (mặc định là 'day')
+      const currentPlanType = task.planType || 'day';
+      if (['day', 'week', 'month', 'year'].includes(viewMode) && currentPlanType !== viewMode) {
+        return false;
+      }
+
       const searchMatch = !searchTerm || task.title.toLowerCase().includes(searchTerm.toLowerCase()) || (task.content && task.content.toLowerCase().includes(searchTerm.toLowerCase()));
       const priorityMatch = filterPriority === 'all' || task.priority === filterPriority;
       let statusMatch = true;
@@ -328,7 +416,7 @@ function App() {
       }
       return searchMatch && priorityMatch && statusMatch;
     });
-  }, [tasks, searchTerm, filterPriority, filterStatus]);
+  }, [tasks, searchTerm, filterPriority, filterStatus, viewMode]);
 
   if (authLoading) {
     return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Đang tải...</div>;
@@ -340,36 +428,67 @@ function App() {
 
   return (
     <div className="app-container">
-      <Toaster position="top-right" />
-      <div className="sidebar">
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          duration: 2000,
+        }}
+      />
+      {isMobileSidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setIsMobileSidebarOpen(false)} />
+      )}
+      <div className={`sidebar ${isMobileSidebarOpen ? 'mobile-open' : ''}`}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '2rem', letterSpacing: '-0.5px', textShadow: '0 2px 10px rgba(139,92,246,0.3)' }}>TaskMaster</h2>
         <button 
           className="btn btn-primary" 
           style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
-          onClick={() => { setTaskToEdit(null); setIsModalOpen(true); }}
+          onClick={() => { setTaskToEdit(null); setIsModalOpen(true); setIsMobileSidebarOpen(false); }}
         >
           <Plus size={20} /> Tạo Mới
         </button>
         <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 'bold', margin: '0 0 0.5rem 0.5rem' }}>Góc nhìn</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 'bold', margin: '0 0 0.5rem 0.5rem' }}>Kế hoạch</p>
           <button 
-            className={`btn ${viewMode === 'kanban' ? 'btn-primary' : 'btn-ghost'}`} 
-            style={{ justifyContent: 'flex-start', opacity: viewMode === 'kanban' ? 1 : 0.7 }}
-            onClick={() => setViewMode('kanban')}
+            className={`btn ${viewMode === 'day' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('day'); setIsMobileSidebarOpen(false); }}
           >
-            <LayoutGrid size={18} /> Dạng Bảng (Kanban)
+            <LayoutGrid size={18} /> Kế hoạch Ngày
           </button>
           <button 
-            className={`btn ${viewMode === 'calendar' ? 'btn-primary' : 'btn-ghost'}`} 
-            style={{ justifyContent: 'flex-start', opacity: viewMode === 'calendar' ? 1 : 0.7 }}
-            onClick={() => setViewMode('calendar')}
+            className={`btn ${viewMode === 'week' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('week'); setIsMobileSidebarOpen(false); }}
           >
-            <CalendarDays size={18} /> Dạng Lịch (Calendar)
+            <LayoutGrid size={18} /> Kế hoạch Tuần
+          </button>
+          <button 
+            className={`btn ${viewMode === 'month' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('month'); setIsMobileSidebarOpen(false); }}
+          >
+            <Calendar size={18} /> Kế hoạch Tháng
+          </button>
+          <button 
+            className={`btn ${viewMode === 'year' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('year'); setIsMobileSidebarOpen(false); }}
+          >
+            <Archive size={18} /> Kế hoạch Năm
+          </button>
+          
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 'bold', margin: '1rem 0 0.5rem 0.5rem' }}>Góc nhìn</p>
+          <button 
+            className={`btn ${viewMode === 'calendar' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('calendar'); setIsMobileSidebarOpen(false); }}
+          >
+            <CalendarDays size={18} /> Lịch Công Việc
           </button>
           <button 
             className={`btn ${viewMode === 'archive' ? 'btn-primary' : 'btn-ghost'}`} 
-            style={{ justifyContent: 'flex-start', opacity: viewMode === 'archive' ? 1 : 0.7 }}
-            onClick={() => setViewMode('archive')}
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('archive'); setIsMobileSidebarOpen(false); }}
           >
             <Archive size={18} /> Kho lưu trữ
           </button>
@@ -394,33 +513,46 @@ function App() {
         </div>
         
         <div className="main-content" style={{ position: 'relative' }}>
-        <header className="header" style={{ padding: '0 2rem', gap: '1rem', flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, minWidth: '150px' }}>
-            {viewMode === 'kanban' ? 'Bảng Công Việc' : 'Lịch Công Việc'}
-          </h1>
+        <header className="header">
+          <div className="header-brand">
+            <button 
+              className="menu-toggle"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              style={{ marginRight: '0.25rem' }}
+            >
+              <Menu size={20} />
+            </button>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 600, minWidth: '120px', margin: 0 }}>
+              {viewMode === 'day' ? 'Kế hoạch Ngày' : 
+               viewMode === 'week' ? 'Kế hoạch Tuần' : 
+               viewMode === 'month' ? 'Kế hoạch Tháng' : 
+               viewMode === 'year' ? 'Kế hoạch Năm' : 
+               viewMode === 'calendar' ? 'Lịch Công Việc' : 'Kho lưu trữ'}
+            </h1>
+          </div>
           
-          <div style={{ display: 'flex', flex: 1, gap: '1rem', alignItems: 'center', minWidth: '300px' }}>
+          <div className="header-search-filters">
             <div style={{ flex: 1, position: 'relative', maxWidth: '300px' }}>
               <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input 
                 className="input" 
                 placeholder="Tìm kiếm công việc..." 
-                style={{ paddingLeft: '2.5rem', background: 'rgba(30,41,59,0.4)', borderRadius: '20px' }}
+                style={{ paddingLeft: '2.5rem', background: 'var(--input-bg)', borderRadius: '20px' }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(30,41,59,0.4)', padding: '0.25rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <Filter size={16} color="var(--text-muted)" style={{ margin: '0.5rem' }} />
-              <select className="input" style={{ border: 'none', background: 'transparent', width: 'auto', padding: '0.25rem 0.5rem' }} value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+            <div className="header-filter-group" style={{ display: 'flex', gap: '0.5rem', background: 'var(--input-bg, rgba(30,41,59,0.4))', padding: '0.25rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <Filter className="header-filter-icon" size={16} color="var(--text-muted)" style={{ margin: '0.5rem' }} />
+              <select className="input header-filter-select" style={{ border: 'none', background: 'transparent', width: 'auto', padding: '0.25rem 0.5rem' }} value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
                 <option value="all">Mọi ưu tiên</option>
                 <option value="high">🔥 Khẩn cấp</option>
                 <option value="medium">⚡ Trung bình</option>
                 <option value="low">🌱 Thấp</option>
               </select>
-              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0.25rem 0' }} />
-              <select className="input" style={{ border: 'none', background: 'transparent', width: 'auto', padding: '0.25rem 0.5rem' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <div className="header-filter-divider" style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '0.25rem 0' }} />
+              <select className="input header-filter-select" style={{ border: 'none', background: 'transparent', width: 'auto', padding: '0.25rem 0.5rem' }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                 <option value="all">Mọi trạng thái</option>
                 <option value="overdue">🚨 Quá hạn</option>
                 <option value="done">✅ Hoàn thành</option>
@@ -428,12 +560,32 @@ function App() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          <div className="header-user">
+            <button 
+              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              className="btn btn-ghost theme-toggle-btn"
+              style={{ 
+                padding: '0.5rem', 
+                borderRadius: '50%', 
+                width: '40px', 
+                height: '40px', 
+                background: 'var(--input-bg, rgba(30,41,59,0.4))', 
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-main)',
+                cursor: 'pointer'
+              }}
+              title={theme === 'dark' ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.75rem',
-              background: 'rgba(30,41,59,0.4)',
+              background: 'var(--input-bg, rgba(30,41,59,0.4))',
               padding: '0.25rem 0.75rem 0.25rem 0.25rem',
               borderRadius: '24px',
               border: '1px solid rgba(255,255,255,0.05)'
@@ -447,28 +599,29 @@ function App() {
                   width: '32px', 
                   height: '32px', 
                   borderRadius: '50%', 
-                  background: 'linear-gradient(135deg, var(--primary), var(--info))', 
+                  background: (userProfile?.photoURL || currentUser?.photoURL) ? `url(${userProfile?.photoURL || currentUser?.photoURL}) center/cover no-repeat` : 'linear-gradient(135deg, var(--primary), var(--info))', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   color: 'white',
                   fontWeight: 'bold',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  overflow: 'hidden'
                 }}>
-                  {currentUser?.displayName ? currentUser.displayName[0] : (currentUser?.email ? currentUser.email[0] : 'U')}
+                  {!(userProfile?.photoURL || currentUser?.photoURL) && (currentUser?.displayName ? currentUser.displayName[0] : (currentUser?.email ? currentUser.email[0] : 'U'))}
                 </div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="header-username" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentUser?.displayName || currentUser?.email || 'Người dùng'}
                 </span>
               </div>
-              <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
+              <div className="header-divider" style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
               <div 
                 style={{ 
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer'
                 }}
                 className="hover-danger"
-                onClick={() => setIsLogoutModalOpen(true)}
+                onClick={() => triggerConfirm('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?', handleLogout, 'Đăng xuất', 'danger', <LogOut size={32} />)}
                 title="Đăng xuất"
               >
                 <LogOut size={16} />
@@ -481,7 +634,7 @@ function App() {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <h2 style={{ color: 'var(--text-muted)' }}>Đang tải dữ liệu từ Cloud...</h2>
           </div>
-        ) : viewMode === 'kanban' ? (
+        ) : ['day', 'week', 'month', 'year'].includes(viewMode) ? (
           <KanbanBoard 
             tasks={filteredTasks} 
             setTasks={setTasks}
@@ -530,7 +683,7 @@ function App() {
           />
         )}
 
-        {viewMode === 'kanban' && selectedTaskIds.length > 0 && (
+        {['day', 'week', 'month', 'year'].includes(viewMode) && selectedTaskIds.length > 0 && (
           <div style={{
             position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
             background: 'var(--bg-surface)', padding: '1rem 2rem', borderRadius: 'var(--radius-lg)',
@@ -567,16 +720,33 @@ function App() {
         onSave={handleSaveTask}
         taskToEdit={taskToEdit}
         columns={columns}
+        defaultPlanType={['day', 'week', 'month', 'year'].includes(viewMode) ? viewMode : 'day'}
       />
-      <UserProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} currentUser={currentUser} />
+      <UserProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+        currentUser={currentUser} 
+        userProfile={userProfile} 
+        refreshUser={refreshUser}
+        onLogout={() => triggerConfirm('Đổi tài khoản', 'Bạn có chắc chắn muốn đăng xuất để đổi tài khoản khác không?', handleLogout, 'Đăng xuất', 'danger', <LogOut size={32} />)}
+      />
       <ConfirmModal 
-        isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={handleLogout}
-        title="Đăng xuất"
-        message="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?"
-        confirmText="Đăng xuất"
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        type={confirmConfig.type}
+        icon={confirmConfig.icon}
       />
+      <button 
+        className="mobile-fab" 
+        onClick={() => { setTaskToEdit(null); setIsModalOpen(true); }}
+        title="Tạo mới công việc"
+      >
+        <Plus size={24} />
+      </button>
     </div>
   );
 }

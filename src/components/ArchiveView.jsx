@@ -4,10 +4,33 @@ import { db } from '../firebase';
 import { Archive, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import ConfirmModal from './ConfirmModal';
 
 export default function ArchiveView({ userId }) {
   const [archivedTasks, setArchivedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  const triggerConfirm = (title, message, onConfirm, confirmText = 'Xác nhận', type = 'danger') => {
+    setConfirmConfig({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      type,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -32,24 +55,38 @@ export default function ArchiveView({ userId }) {
     }
   };
 
-  const handleDelete = async (taskId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xoá vĩnh viễn công việc này? Hành động này không thể hoàn tác.')) {
-      try {
-        await deleteDoc(doc(db, 'tasks', taskId));
-        toast.success('Đã xoá vĩnh viễn!');
-      } catch (e) {
-        toast.error('Lỗi khi xoá!');
+  const handleDelete = (taskId) => {
+    triggerConfirm(
+      'Xóa vĩnh viễn',
+      'Bạn có chắc chắn muốn xoá vĩnh viễn công việc này? Hành động này không thể hoàn tác.',
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'tasks', taskId));
+          toast.success('Đã xoá vĩnh viễn!');
+        } catch (e) {
+          toast.error('Lỗi khi xoá!');
+        }
       }
-    }
+    );
   };
 
-  const handleRestoreAll = async () => {
-    if (window.confirm('Khôi phục tất cả công việc đã lưu trữ?')) {
-      for (const t of archivedTasks) {
-        await updateDoc(doc(db, 'tasks', t.id), { isArchived: false });
-      }
-      toast.success('Đã khôi phục tất cả!');
-    }
+  const handleRestoreAll = () => {
+    triggerConfirm(
+      'Khôi phục tất cả',
+      'Khôi phục tất cả công việc đã lưu trữ?',
+      async () => {
+        try {
+          for (const t of archivedTasks) {
+            await updateDoc(doc(db, 'tasks', t.id), { isArchived: false });
+          }
+          toast.success('Đã khôi phục tất cả!');
+        } catch (e) {
+          toast.error('Lỗi khi khôi phục!');
+        }
+      },
+      'Khôi phục',
+      'primary'
+    );
   };
 
   if (loading) {
@@ -123,6 +160,15 @@ export default function ArchiveView({ userId }) {
           border-color: rgba(255,255,255,0.15) !important;
         }
       `}</style>
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

@@ -46,8 +46,8 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
         ref={setNodeRef}
         style={{
           ...style,
-          width: '320px',
-          minWidth: '320px',
+          width: '280px',
+          minWidth: '280px',
           minHeight: '500px',
           background: 'rgba(30, 41, 59, 0.3)',
           border: '2px solid var(--primary)',
@@ -61,14 +61,14 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
   return (
     <div
       ref={setNodeRef}
-      className="glass-panel"
+      className="glass-panel kanban-column"
       style={{
         ...style,
-        width: '320px',
-        minWidth: '320px',
+        width: '280px',
+        minWidth: '280px',
         maxHeight: '100%',
         minHeight: '200px',
-        background: 'rgba(30, 41, 59, 0.5)',
+        background: 'var(--glass-card-bg, rgba(30, 41, 59, 0.5))',
         padding: '1rem',
         borderRadius: '8px',
         display: 'flex',

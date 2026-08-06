@@ -14,6 +14,17 @@
   --success: #10b981;
   --warning: #f59e0b;
   --info: #3b82f6;
+
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-card-bg: rgba(30, 41, 59, 0.5);
+  --input-bg: rgba(30, 41, 59, 0.4);
+  --backdrop-bg: rgba(0, 0, 0, 0.6);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --calendar-cell-active: rgba(15, 23, 42, 0.4);
+  --calendar-cell-inactive: rgba(15, 23, 42, 0.1);
+  --calendar-cell-today: rgba(139, 92, 246, 0.15);
   
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -24,6 +35,32 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --bg-color: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f8fafc;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  --glass-bg: rgba(255, 255, 255, 0.82); /* Increased opacity to prevent dark backdrops from bleeding through */
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-card-bg: rgba(255, 255, 255, 0.6);
+  --input-bg: rgba(255, 255, 255, 0.7);
+  --backdrop-bg: rgba(15, 23, 42, 0.35);
+  --calendar-cell-active: rgba(255, 255, 255, 0.65);
+  --calendar-cell-inactive: rgba(255, 255, 255, 0.25);
+  --calendar-cell-today: rgba(139, 92, 246, 0.12);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.3);
 }
 
 option {
@@ -53,6 +90,15 @@ body {
     radial-gradient(at 0% 100%, hsla(225, 40%, 15%, 1) 0px, transparent 50%);
   background-attachment: fixed;
   background-size: cover;
+}
+
+[data-theme='light'] body {
+  background-image: 
+    radial-gradient(at 20% 0%, hsla(253, 50%, 88%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(225, 50%, 88%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(339, 50%, 88%, 1) 0px, transparent 50%),
+    radial-gradient(at 80% 100%, hsla(253, 50%, 88%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(225, 50%, 88%, 1) 0px, transparent 50%);
 }
 
 /* Animations */
@@ -108,15 +154,15 @@ body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: var(--radius-sm); }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: var(--radius-sm); }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* Utilities & Components */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75); /* Đậm hơn để nổi chữ */
+  background: var(--glass-bg); /* Sử dụng biến chủ đề */
   backdrop-filter: blur(20px); /* Tăng độ mờ nền */
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15); /* Viền sáng hơn một chút */
+  border: 1px solid var(--glass-border); /* Sử dụng viền biến chủ đề */
   box-shadow: var(--shadow-lg);
   border-radius: var(--radius-lg);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
@@ -163,12 +209,12 @@ body {
   color: var(--text-main);
 }
 
-.input { color-scheme: dark !important;
+.input {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
   color: var(--text-main);
   font-family: inherit;
   font-size: 0.95rem;
@@ -180,10 +226,9 @@ body {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
 }
 
-/* Fix dark calendar icon in datetime-local inputs */
+/* Fix calendar icon in datetime-local inputs */
 input[type="datetime-local"],
 input[type="date"] {
-  color-scheme: dark !important;
 }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator,

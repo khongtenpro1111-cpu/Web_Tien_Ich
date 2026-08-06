@@ -20,6 +20,16 @@ export default function KanbanBoard({
   
   const [activeColumn, setActiveColumn] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newColTitle, setNewColTitle] = useState('');
+
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    if (!newColTitle.trim()) return;
+    onAddColumn(newColTitle.trim(), '#8b5cf6');
+    setNewColTitle('');
+    setIsAdding(false);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -37,7 +47,7 @@ export default function KanbanBoard({
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
     >
-      <div className="board-container" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', padding: '1rem', width: '100%', height: '100%', alignItems: 'flex-start' }}>
+      <div className="board-container" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', padding: '1rem', width: '100%', height: '100%', alignItems: 'stretch' }}>
         <SortableContext items={columnsId}>
           {columns.map((col) => (
             <Column
@@ -53,28 +63,77 @@ export default function KanbanBoard({
           ))}
         </SortableContext>
         
-        <button 
-          onClick={onAddColumn}
-          style={{
-            minWidth: '320px',
-            height: 'fit-content',
-            padding: '1rem',
-            background: 'rgba(255,255,255,0.02)',
-            border: '2px dashed rgba(255,255,255,0.1)',
-            borderRadius: 'var(--radius-lg)',
-            color: 'var(--text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-        >
-          <Plus size={20} /> Thêm Cột Mới
-        </button>
+        {isAdding ? (
+          <form 
+            onSubmit={handleAddSubmit}
+            style={{
+              minWidth: '280px',
+              padding: '1rem',
+              background: 'rgba(15, 23, 42, 0.6)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 'var(--radius-lg)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            <input 
+              type="text" 
+              placeholder="Tên cột mới..." 
+              value={newColTitle}
+              onChange={(e) => setNewColTitle(e.target.value)}
+              className="input"
+              autoFocus
+              required
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                fontSize: '0.9rem',
+              }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+                onClick={() => { setIsAdding(false); setNewColTitle(''); }}
+              >
+                Hủy
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+              >
+                Lưu
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button 
+            onClick={() => setIsAdding(true)}
+            style={{
+              minWidth: '280px',
+              height: 'fit-content',
+              padding: '1rem',
+              background: 'rgba(255,255,255,0.02)',
+              border: '2px dashed rgba(255,255,255,0.1)',
+              borderRadius: 'var(--radius-lg)',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+          >
+            <Plus size={20} /> Thêm Cột Mới
+          </button>
+        )}
       </div>
 
       <DragOverlay>

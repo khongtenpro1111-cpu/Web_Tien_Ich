@@ -12,8 +12,8 @@ export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTas
   const daysInMonth = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart, { weekStarts: 1 }); // Start on Monday
-    const endDate = endOfWeek(monthEnd, { weekStarts: 1 });
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start on Monday
+    const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
     return eachDayOfInterval({ start: startDate, end: endDate });
   }, [currentMonth]);
@@ -61,38 +61,52 @@ export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTas
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden', padding: '0 0 1rem 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', background: 'rgba(30, 41, 59, 0.65)', backdropFilter: 'blur(20px)', padding: '1rem 1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="calendar-month-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', background: 'var(--glass-bg, rgba(30, 41, 59, 0.65))', backdropFilter: 'blur(20px)', padding: '1rem 1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--glass-border, rgba(255,255,255,0.1))' }}>
         <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <CalendarIcon size={24} color="var(--primary)" />
           Tháng {format(currentMonth, 'MM / yyyy')}
         </h2>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-ghost" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px' }} onClick={goToToday}>Hôm nay</button>
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', overflow: 'hidden' }}>
+          <button className="btn btn-ghost" style={{ background: 'var(--input-bg, rgba(255,255,255,0.05))', borderRadius: '20px' }} onClick={goToToday}>Hôm nay</button>
+          <div style={{ display: 'flex', background: 'var(--input-bg, rgba(255,255,255,0.05))', borderRadius: '20px', overflow: 'hidden' }}>
             <button className="btn btn-ghost" style={{ padding: '0.5rem 1rem', borderRadius: 0 }} onClick={prevMonth}><ChevronLeft size={20} /></button>
             <button className="btn btn-ghost" style={{ padding: '0.5rem 1rem', borderRadius: 0 }} onClick={nextMonth}><ChevronRight size={20} /></button>
           </div>
         </div>
       </div>
 
-      <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: 0 }}>
+      <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 'var(--radius-lg)', overflow: 'hidden', padding: 0, minHeight: 0 }}>
         {/* Header Days */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'].map(day => (
-            <div key={day} style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: 'var(--input-bg, rgba(0,0,0,0.2))', borderBottom: '1px solid var(--glass-border, rgba(255,255,255,0.1))' }}>
+          {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => (
+            <div key={day} style={{ padding: '0.75rem 0.25rem', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar Grid */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridTemplateRows: `repeat(${rowsCount}, 1fr)`, gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: `repeat(${rowsCount}, 1fr)`, gap: '1px', background: 'var(--glass-border, rgba(255,255,255,0.05))', minHeight: 0 }}>
           {daysInMonth.map((day, idx) => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayTasks = tasksByDate[dateKey] || [];
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isToday = isSameDay(day, new Date());
             const isPast = isBefore(day, startOfDay(new Date()));
+
+            if (!isCurrentMonth) {
+              return (
+                <div 
+                  key={day.toString()} 
+                  style={{ 
+                    background: 'var(--calendar-cell-inactive)', 
+                    minHeight: '50px', 
+                    opacity: 0.1,
+                    cursor: 'default'
+                  }}
+                />
+              );
+            }
 
             return (
               <div 
@@ -101,11 +115,10 @@ export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTas
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, day)}
                 style={{ 
-                  background: isToday ? 'rgba(139, 92, 246, 0.15)' : (isCurrentMonth ? 'rgba(15, 23, 42, 0.4)' : 'rgba(15, 23, 42, 0.1)'), 
-                  border: isToday ? '1px solid rgba(139, 92, 246, 0.5)' : 'none',
-                  minHeight: '100px', 
+                  background: isToday ? 'var(--calendar-cell-today)' : 'var(--calendar-cell-active)', 
+                  border: isToday ? '1px solid var(--primary)' : 'none',
+                  minHeight: '50px', 
                   padding: '0.5rem',
-                  opacity: isCurrentMonth ? 1 : 0.4,
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'all 0.2s',
@@ -163,6 +176,7 @@ export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTas
                     return (
                       <div 
                         key={task.id}
+                        className="calendar-task-item"
                         draggable
                         onDragStart={(e) => handleDragStart(e, task)}
                         onClick={(e) => { e.stopPropagation(); onEditTask(task); }}

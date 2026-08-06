@@ -92,7 +92,7 @@ export default function TaskCard({ task, onEdit, isSelected, onSelectTask }) {
       }}
       {...attributes}
       {...listeners}
-      className={`glass-panel card-hover ${isOverdue ? 'overdue-pulse shake-animation' : ''}`}
+      className={`glass-panel card-hover task-card-item ${isOverdue ? 'overdue-pulse shake-animation' : ''}`}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

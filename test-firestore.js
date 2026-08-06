@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDBWVzIDXGRww3wFltUHxLjoxS1NPDRqhM",
@@ -14,8 +14,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function check() {
-  const tasks = await getDocs(collection(db, "tasks"));
-  console.log("Tasks count:", tasks.size);
-  tasks.forEach(d => console.log(d.id, d.data()));
+  try {
+    console.log("Reading columns...");
+    const cols = await getDocs(collection(db, "columns"));
+    console.log("Columns count:", cols.size);
+    cols.forEach(d => console.log(d.id, d.data()));
+  } catch (error) {
+    console.error("Error during Firestore operations:", error);
+  }
 }
 check();
