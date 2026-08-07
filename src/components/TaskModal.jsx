@@ -31,6 +31,14 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
     }
   }, [taskToEdit, isOpen, columns, defaultPlanType]);
 
+  const handleColumnChange = (newColId) => {
+    setColumnId(newColId);
+    const selectedCol = columns.find(c => c.id === newColId);
+    if (selectedCol && selectedCol.planType) {
+      setPlanType(selectedCol.planType);
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
@@ -82,10 +90,11 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '130px' }}>
               <label style={{ display: 'block', marginBottom: '0.3rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Trạng thái</label>
-              <select className="input" value={columnId} onChange={(e) => setColumnId(e.target.value)} style={{ padding: '0.45rem 0.75rem', fontSize: '0.88rem' }}>
-                {columns.map(col => (
-                  <option key={col.id} value={col.id}>{col.title}</option>
-                ))}
+              <select className="input" value={columnId} onChange={(e) => handleColumnChange(e.target.value)} style={{ padding: '0.45rem 0.75rem', fontSize: '0.88rem' }}>
+                {columns.map(col => {
+                  const planLabel = col.planType === 'week' ? ' (Kế hoạch Tuần)' : (col.planType === 'month' ? ' (Kế hoạch Tháng)' : (col.planType === 'year' ? ' (Kế hoạch Năm)' : ''));
+                  return <option key={col.id} value={col.id}>{col.title}{planLabel}</option>;
+                })}
               </select>
             </div>
             <div style={{ flex: 1, minWidth: '130px' }}>

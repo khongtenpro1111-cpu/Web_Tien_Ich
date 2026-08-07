@@ -44,12 +44,24 @@ export default function AuthScreen() {
 
   const handleGoogleSignIn = async () => {
     try {
+      setLoading(true);
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
       toast.success('Đăng nhập Google thành công!');
     } catch (error) {
       console.error(error);
-      toast.error('Lỗi đăng nhập Google: ' + error.message);
+      if (error.code === 'auth/missing-initial-state' || error.message?.includes('missing initial state') || error.message?.includes('sessionStorage')) {
+        toast.error('Trình duyệt (Zalo/FB/Messenger) chặn bộ nhớ! Vui lòng bấm dấu 3 chấm góc trên chọn "Mở bằng trình duyệt" (Chrome/Safari) để đăng nhập Google.', { duration: 8000 });
+      } else if (error.code === 'auth/popup-blocked') {
+        toast.error('Trình duyệt đã chặn cửa sổ bật lên (popup). Vui lòng cho phép popup để tiếp tục!');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        // User closed popup, no error toast needed
+      } else {
+        toast.error('Lỗi đăng nhập Google: ' + error.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

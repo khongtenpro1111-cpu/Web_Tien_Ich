@@ -402,9 +402,14 @@ function App() {
     );
   };
 
-  const handleBulkMove = async (targetCol) => {
+  const handleBulkMove = async (targetColId) => {
+    const targetCol = columns.find(c => c.id === targetColId);
+    const updates = { columnId: targetColId };
+    if (targetCol && targetCol.planType) {
+      updates.planType = targetCol.planType;
+    }
     for (const id of selectedTaskIds) {
-      await updateDoc(doc(db, 'tasks', id), { columnId: targetCol });
+      await updateDoc(doc(db, 'tasks', id), updates);
     }
     setSelectedTaskIds([]);
     toast.success('Đã di chuyển hàng loạt!');
@@ -431,7 +436,7 @@ function App() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      // Lọc theo loại kế hoạch (mặc định là 'day')
+      // Lọc công việc theo từng kế hoạch riêng lẻ (Ngày, Tuần, Tháng, Năm)
       const currentPlanType = task.planType || 'day';
       if (['day', 'week', 'month', 'year'].includes(viewMode) && currentPlanType !== viewMode) {
         return false;
@@ -724,7 +729,9 @@ function App() {
             setColumns={setColumns}
             onUpdateTask={async (updatedTask) => {
               try {
-                await updateDoc(doc(db, 'tasks', updatedTask.id), { columnId: updatedTask.columnId });
+                const updates = { columnId: updatedTask.columnId };
+                if (updatedTask.planType) updates.planType = updatedTask.planType;
+                await updateDoc(doc(db, 'tasks', updatedTask.id), updates);
               } catch (e) {
                 console.error("Lỗi cập nhật cột", e);
               }
@@ -787,7 +794,10 @@ function App() {
             
             <select className="input" value="" onChange={(e) => { if(e.target.value) handleBulkMove(e.target.value) }} style={{ padding: '0.35rem 0.6rem', fontSize: '0.82rem', background: 'rgba(59, 130, 246, 0.2)', width: 'auto' }}>
               <option value="" disabled>Di chuyển...</option>
-              {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
+              {columns.map(col => {
+                const planTag = col.planType ? ` (${col.planType === 'week' ? 'Tuần' : col.planType === 'month' ? 'Tháng' : col.planType === 'year' ? 'Năm' : 'Ngày'})` : '';
+                return <option key={col.id} value={col.id}>{col.title}{planTag}</option>;
+              })}
             </select>
 
             <select className="input" style={{ width: 'auto', padding: '0.35rem 0.6rem', fontSize: '0.82rem' }} onChange={handleBulkPriority} value="">
