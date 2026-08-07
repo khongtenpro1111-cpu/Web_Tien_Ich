@@ -85,7 +85,7 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
           flexShrink: 0,
         }}
       >
-        <div {...attributes} {...listeners} style={{ cursor: 'grab', touchAction: 'none', flex: 1, display: 'flex', alignItems: 'center' }}>
+        <div {...attributes} {...listeners} style={{ cursor: 'grab', touchAction: 'manipulation', flex: 1, display: 'flex', alignItems: 'center' }}>
           {isEditing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
               <input 

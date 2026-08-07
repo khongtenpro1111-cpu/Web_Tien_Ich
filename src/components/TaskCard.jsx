@@ -86,7 +86,7 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
         ...style,
         padding: '0.75rem',
         cursor: 'grab',
-        touchAction: 'none',
+        touchAction: 'manipulation',
         position: 'relative',
         borderLeft: isOverdue ? '4px solid var(--danger)' : '4px solid transparent',
         boxShadow: isSelected ? '0 0 0 2px var(--primary)' : 'var(--shadow-lg)',

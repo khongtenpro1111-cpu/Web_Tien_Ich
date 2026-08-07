@@ -78,6 +78,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -591,26 +592,77 @@ function App() {
           </div>
 
           <div className="header-user">
-            <button 
-              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              className="btn btn-ghost theme-toggle-btn"
-              style={{ 
-                padding: '0.5rem', 
-                borderRadius: '50%', 
-                width: '40px', 
-                height: '40px', 
-                background: 'var(--input-bg, rgba(30,41,59,0.4))', 
-                border: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-main)',
-                cursor: 'pointer'
-              }}
-              title={theme === 'dark' ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setIsThemeMenuOpen(prev => !prev)}
+                className="btn btn-ghost theme-toggle-btn"
+                style={{ 
+                  padding: '0.5rem', 
+                  borderRadius: '50%', 
+                  width: '40px', 
+                  height: '40px', 
+                  background: 'var(--input-bg, rgba(30,41,59,0.4))', 
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-main)',
+                  cursor: 'pointer'
+                }}
+                title="Đổi màu chủ đề"
+              >
+                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--info))' }} />
+              </button>
+
+              {isThemeMenuOpen && (
+                <div style={{
+                  position: 'absolute', top: '120%', right: 0,
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--glass-border, rgba(255,255,255,0.15))',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '0.5rem',
+                  boxShadow: 'var(--shadow-lg)',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem',
+                  minWidth: '170px',
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}>
+                  {[
+                    { id: 'dark', label: '🌙 Tối (Mặc định)', color: '#8b5cf6' },
+                    { id: 'light', label: '☀️ Sáng', color: '#7c3aed' },
+                    { id: 'ocean', label: '🌊 Đại Dương', color: '#06b6d4' },
+                    { id: 'emerald', label: '🌲 Lục Bảo', color: '#10b981' },
+                    { id: 'sunset', label: '🌅 Hoàng Hôn', color: '#f97316' },
+                    { id: 'rose', label: '🌸 Hoa Hồng', color: '#f43f5e' },
+                    { id: 'cyberpunk', label: '⚡ Cyberpunk', color: '#ec4899' },
+                    { id: 'sunshine', label: '🌻 Nắng Vàng Tươi (Sáng)', color: '#facc15' },
+                    { id: 'amber', label: '🍯 Hổ Phách (Vàng Đậm)', color: '#eab308' },
+                    { id: 'midnight', label: '🌌 Đêm Thâm Thẫm', color: '#6366f1' },
+                    { id: 'mint', label: '🌿 Bạc Hà (Sáng)', color: '#0d9488' },
+                    { id: 'crimson', label: '🔥 Đỏ Thẫm', color: '#dc2626' },
+                    { id: 'lavender', label: '🪻 Oải Hương (Sáng)', color: '#a855f7' },
+                    { id: 'forest', label: '🍃 Rừng Xanh', color: '#84cc16' },
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => { setTheme(t.id); setIsThemeMenuOpen(false); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                        padding: '0.4rem 0.6rem', borderRadius: '8px',
+                        border: 'none', background: theme === t.id ? 'var(--input-bg, rgba(255,255,255,0.1))' : 'transparent',
+                        color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.85rem', textAlign: 'left'
+                      }}
+                    >
+                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.color, display: 'inline-block' }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -714,32 +766,41 @@ function App() {
         )}
 
         {['day', 'week', 'month', 'year'].includes(viewMode) && selectedTaskIds.length > 0 && (
-          <div style={{
-            position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
-            background: 'var(--bg-surface)', padding: '1rem 2rem', borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: '1.5rem', zIndex: 50,
-            border: '1px solid rgba(255,255,255,0.1)'
-          }}>
-            <span style={{ fontWeight: 'bold' }}>Đã chọn: {selectedTaskIds.length} thẻ</span>
-            <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <select className="input" value="" onChange={(e) => { if(e.target.value) handleBulkMove(e.target.value) }} style={{ padding: '0.5rem', background: 'rgba(59, 130, 246, 0.2)' }}>
-                <option value="" disabled>Di chuyển tới...</option>
-                {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
-              </select>
-              <button className="btn" onClick={handleBulkArchive} style={{ background: 'var(--success)' }}>Lưu trữ</button>
-              <button className="btn" onClick={handleBulkDelete} style={{ background: 'var(--danger)' }}><Trash2 size={16} /> Xoá</button>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Star size={18} color="var(--text-muted)" />
-              <select className="input" style={{ width: 'auto', padding: '0.25rem 0.5rem' }} onChange={handleBulkPriority} value="">
-                <option value="" disabled>Đổi ưu tiên...</option>
-                <option value="high">🔥 Khẩn cấp</option>
-                <option value="medium">⚡ Trung bình</option>
-                <option value="low">🌱 Thấp</option>
-              </select>
-            </div>
-            <button className="btn btn-ghost" onClick={() => setSelectedTaskIds([])}>Hủy chọn</button>
+          <div 
+            className="bulk-actions-toolbar"
+            style={{
+              position: 'fixed', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)',
+              background: 'var(--glass-bg, rgba(30, 41, 59, 0.95))',
+              backdropFilter: 'blur(20px)',
+              padding: '0.75rem 1rem', borderRadius: 'var(--radius-lg)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 999,
+              border: '1px solid var(--glass-border, rgba(255,255,255,0.15))',
+              maxWidth: '92vw',
+              overflowX: 'auto',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}
+          >
+            <span style={{ fontWeight: 'bold', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Đã chọn: {selectedTaskIds.length}</span>
+            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)' }} />
+            
+            <select className="input" value="" onChange={(e) => { if(e.target.value) handleBulkMove(e.target.value) }} style={{ padding: '0.35rem 0.6rem', fontSize: '0.82rem', background: 'rgba(59, 130, 246, 0.2)', width: 'auto' }}>
+              <option value="" disabled>Di chuyển...</option>
+              {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
+            </select>
+
+            <select className="input" style={{ width: 'auto', padding: '0.35rem 0.6rem', fontSize: '0.82rem' }} onChange={handleBulkPriority} value="">
+              <option value="" disabled>Đổi ưu tiên...</option>
+              <option value="high">🔥 Khẩn cấp</option>
+              <option value="medium">⚡ Trung bình</option>
+              <option value="low">🌱 Thấp</option>
+            </select>
+
+            <button className="btn" onClick={handleBulkArchive} style={{ background: 'var(--success)', padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}>Lưu trữ</button>
+            <button className="btn" onClick={handleBulkDelete} style={{ background: 'var(--danger)', padding: '0.35rem 0.75rem', fontSize: '0.82rem' }}><Trash2 size={14} /> Xoá</button>
+            
+            <button className="btn btn-ghost" onClick={() => setSelectedTaskIds([])} style={{ padding: '0.35rem 0.6rem', fontSize: '0.82rem' }}>Hủy chọn</button>
           </div>
         )}
       </div>
