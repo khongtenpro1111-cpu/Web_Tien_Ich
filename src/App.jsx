@@ -446,9 +446,14 @@ function App() {
       const priorityMatch = filterPriority === 'all' || task.priority === filterPriority;
       let statusMatch = true;
       if (filterStatus === 'overdue') {
-        statusMatch = task.dueDate && new Date(task.dueDate) < new Date() && task.columnId !== 'done';
+        const col = columns.find(c => c.id === task.columnId);
+        const isDone = col ? (col.id === 'done' || col.id.endsWith('_done') || col.title === 'Hoàn thành') : false;
+        statusMatch = task.dueDate && new Date(task.dueDate) < new Date() && !isDone;
       } else if (filterStatus === 'done') {
-        statusMatch = task.columnId === 'done';
+        const col = columns.find(c => c.id === task.columnId);
+        const isDone = col ? (col.id === 'done' || col.id.endsWith('_done') || col.title === 'Hoàn thành') : false;
+        const allSubtasksDone = task.subtasks && task.subtasks.length > 0 && task.subtasks.every(st => st.completed);
+        statusMatch = isDone || allSubtasksDone;
       }
       return searchMatch && priorityMatch && statusMatch;
     });
