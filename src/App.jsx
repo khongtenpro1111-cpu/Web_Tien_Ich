@@ -636,7 +636,7 @@ function App() {
                     { id: 'ocean', label: '🌊 Đại Dương', color: '#06b6d4' },
                     { id: 'emerald', label: '🌲 Lục Bảo', color: '#10b981' },
                     { id: 'sunset', label: '🌅 Hoàng Hôn', color: '#f97316' },
-                    { id: 'rose', label: '🌸 Hoa Hồng', color: '#f43f5e' },
+                    { id: 'rose', label: '🌸 Hoa Hồng (Sáng)', color: '#f43f5e' },
                     { id: 'cyberpunk', label: '⚡ Cyberpunk', color: '#ec4899' },
                     { id: 'sunshine', label: '🌻 Nắng Vàng Tươi (Sáng)', color: '#facc15' },
                     { id: 'amber', label: '🍯 Hổ Phách (Vàng Đậm)', color: '#eab308' },

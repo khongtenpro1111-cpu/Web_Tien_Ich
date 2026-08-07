@@ -150,17 +150,17 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
       </div>
       <style>{`
         .column-scroll::-webkit-scrollbar {
-          width: 4px;
+          width: 6px;
         }
         .column-scroll::-webkit-scrollbar-track {
           background: transparent;
         }
         .column-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.1);
+          background: var(--scrollbar-thumb, rgba(0,0,0,0.25));
           border-radius: 4px;
         }
         .column-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(255,255,255,0.2);
+          background: var(--scrollbar-thumb-hover, rgba(0,0,0,0.4));
         }
       `}</style>
     </div>

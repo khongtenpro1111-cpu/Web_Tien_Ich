@@ -110,16 +110,31 @@
 }
 
 [data-theme='rose'] {
-  color-scheme: dark;
+  color-scheme: light;
   --primary: #f43f5e;
   --primary-hover: #e11d48;
-  --bg-color: #881337;
-  --bg-surface: #9f1239;
-  --bg-surface-hover: #be123c;
-  --text-main: #ffffff;
-  --text-muted: #ffe4e6;
-  --bg-grad-1: hsla(343, 70%, 28%, 1);
-  --bg-grad-2: hsla(320, 65%, 30%, 1);
+  --bg-color: #fff1f2;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #ffe4e6;
+  --text-main: #4c0519;
+  --text-muted: #9f1239;
+  --danger: #e11d48;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --glass-bg: rgba(255, 241, 242, 0.94);
+  --header-bg: rgba(255, 228, 230, 0.96);
+  --glass-border: rgba(244, 63, 94, 0.25);
+  --glass-card-bg: rgba(255, 255, 255, 0.95);
+  --input-bg: rgba(255, 241, 242, 0.9);
+  --backdrop-bg: rgba(76, 5, 25, 0.4);
+  --scrollbar-thumb: rgba(244, 63, 94, 0.35);
+  --scrollbar-thumb-hover: rgba(244, 63, 94, 0.6);
+  --calendar-cell-active: rgba(255, 255, 255, 0.92);
+  --calendar-cell-inactive: rgba(255, 228, 230, 0.4);
+  --calendar-cell-today: rgba(244, 63, 94, 0.18);
+  --bg-grad-1: hsla(350, 100%, 93%, 1);
+  --bg-grad-2: hsla(330, 100%, 91%, 1);
 }
 
 [data-theme='cyberpunk'] {
@@ -240,8 +255,8 @@
   --glass-card-bg: rgba(255, 255, 255, 0.97);
   --input-bg: rgba(255, 251, 235, 0.95);
   --backdrop-bg: rgba(28, 19, 2, 0.45);
-  --scrollbar-thumb: rgba(180, 83, 9, 0.25);
-  --scrollbar-thumb-hover: rgba(180, 83, 9, 0.45);
+  --scrollbar-thumb: rgba(180, 83, 9, 0.45);
+  --scrollbar-thumb-hover: rgba(180, 83, 9, 0.7);
   --calendar-cell-active: rgba(255, 255, 255, 0.92);
   --calendar-cell-inactive: rgba(254, 249, 195, 0.5);
   --calendar-cell-today: rgba(217, 119, 6, 0.2);

@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
   MouseSensor,
   TouchSensor,
   useSensor,
@@ -36,20 +35,15 @@ export default function KanbanBoard({
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 400,
-        tolerance: 8,
+        delay: 150,
+        tolerance: 5,
       },
     }),
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
   );
 
   return (

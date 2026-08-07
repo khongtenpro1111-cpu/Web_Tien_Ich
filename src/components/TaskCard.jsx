@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createEvent } from 'ics';
-import { Edit2, Calendar, CheckSquare, Bell } from 'lucide-react';
+import { Edit2, Calendar, CheckSquare, Bell, GripVertical } from 'lucide-react';
 
 export default function TaskCard({ task, column, onEdit, isSelected, onSelectTask }) {
   const {
@@ -85,18 +85,37 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
       style={{
         ...style,
         padding: '0.75rem',
-        cursor: 'grab',
-        touchAction: 'manipulation',
+        cursor: 'default',
+        touchAction: 'auto',
         position: 'relative',
         borderLeft: isOverdue ? '4px solid var(--danger)' : '4px solid transparent',
         boxShadow: isSelected ? '0 0 0 2px var(--primary)' : 'var(--shadow-lg)',
       }}
-      {...attributes}
-      {...listeners}
       className={`glass-panel card-hover task-card-item ${isOverdue ? 'overdue-pulse shake-animation' : ''}`}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          {/* Drag Handle - chỉ kéo khi chạm vào icon này */}
+          <div
+            {...attributes}
+            {...listeners}
+            style={{
+              cursor: 'grab',
+              touchAction: 'none',
+              padding: '0.25rem 0.15rem',
+              borderRadius: '6px',
+              color: 'var(--primary)',
+              background: 'var(--input-bg)',
+              border: '1px solid var(--glass-border)',
+              display: 'flex',
+              alignItems: 'center',
+              flexShrink: 0,
+              opacity: 0.85,
+            }}
+            title="Giữ và kéo để di chuyển"
+          >
+            <GripVertical size={16} />
+          </div>
           {onSelectTask && (
             <input 
               type="checkbox" 
