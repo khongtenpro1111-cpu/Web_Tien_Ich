@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createEvent } from 'ics';
-import { Edit2, Calendar, CheckSquare, Bell, GripVertical } from 'lucide-react';
+import { Edit2, Calendar, CheckSquare, Bell, GripVertical, X } from 'lucide-react';
 
 export default function TaskCard({ task, column, onEdit, isSelected, onSelectTask }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const {
     setNodeRef,
     attributes,
@@ -165,9 +168,32 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
       </div>
       
       <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.3 }}>{task.title}</h4>
-      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'pre-wrap', marginBottom: '0.4rem', fontWeight: 500, lineHeight: 1.4 }}>
-        {task.content}
-      </p>
+      
+      {task.content && (
+        <div style={{ marginBottom: '0.4rem' }}>
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
+            style={{
+              background: 'var(--input-bg)',
+              border: '1px solid var(--glass-border)',
+              color: 'var(--primary)',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: '0.25rem 0.5rem',
+              borderRadius: '6px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            📋 Xem chi tiết
+          </button>
+        </div>
+      )}
 
       {totalSubtasks > 0 && (
         <div style={{ marginBottom: '0.4rem' }}>
@@ -207,6 +233,80 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
             </span>
           )}
         </div>
+      )}
+
+      {/* Hộp xem chi tiết công việc (Portal ra document.body) */}
+      {isExpanded && createPortal(
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'var(--backdrop-bg, rgba(0,0,0,0.6))', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999,
+            padding: '0.75rem'
+          }}
+          onClick={() => setIsExpanded(false)}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%', maxWidth: '720px', height: '92vh',
+              padding: '1rem', borderRadius: 'var(--radius-lg)',
+              display: 'flex', flexDirection: 'column',
+              border: '1px solid var(--glass-border)',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header compact */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className={`tag ${priorityClass}`} style={{ fontSize: '0.72rem' }}>{priorityLabel}</span>
+                {task.dueDate && (
+                  <span style={{ fontSize: '0.75rem', color: isOverdue ? 'var(--danger)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <Bell size={12} /> {new Date(task.dueDate).toLocaleString()}
+                  </span>
+                )}
+              </div>
+              <button className="btn btn-ghost" style={{ padding: '0.25rem' }} onClick={() => setIsExpanded(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Title */}
+            <h3 style={{ margin: '0.5rem 0 0.4rem 0', fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)', lineHeight: 1.3, flexShrink: 0 }}>{task.title}</h3>
+
+            {/* Nội dung - chiếm toàn bộ không gian còn lại */}
+            <div style={{
+              flex: 1, minHeight: 0, overflowY: 'auto',
+              background: 'var(--input-bg)', padding: '0.85rem',
+              borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)',
+              marginBottom: totalSubtasks > 0 ? '0.5rem' : '0'
+            }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
+                {task.content}
+              </p>
+            </div>
+
+            {/* Checklist (nếu có) */}
+            {totalSubtasks > 0 && (
+              <div style={{ flexShrink: 0, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', maxHeight: '120px', overflowY: 'auto' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem', display: 'block' }}>Checklist ({completedSubtasks}/{totalSubtasks})</span>
+                {task.subtasks.map(st => (
+                  <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: st.completed ? 'var(--text-muted)' : 'var(--text-main)', textDecoration: st.completed ? 'line-through' : 'none', padding: '0.1rem 0' }}>
+                    <span>{st.completed ? '✅' : '▫️'}</span>
+                    <span>{st.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.5rem', flexShrink: 0 }}>
+              <button className="btn btn-primary" style={{ padding: '0.4rem 1.25rem', fontSize: '0.85rem' }} onClick={() => setIsExpanded(false)}>Đóng</button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

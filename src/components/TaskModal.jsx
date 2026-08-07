@@ -11,11 +11,20 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
   const [planType, setPlanType] = useState('day');
   const [subtasks, setSubtasks] = useState([]);
 
+  // Convert ISO date string / Date to local HTML datetime-local format YYYY-MM-DDTHH:mm
+  const toLocalISOString = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => (n < 10 ? '0' + n : n);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   useEffect(() => {
     if (taskToEdit) {
       setTitle(taskToEdit.title || '');
       setContent(taskToEdit.content || '');
-      setDueDate(taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().slice(0, 16) : '');
+      setDueDate(toLocalISOString(taskToEdit.dueDate));
       setColumnId(taskToEdit.columnId || columns[0]?.id || 'todo');
       setPriority(taskToEdit.priority || 'medium');
       setPlanType(taskToEdit.planType || 'day');
