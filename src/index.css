@@ -294,7 +294,19 @@ body {
   transition: background-color 0.4s ease;
 }
 
-/* Animations */
+@keyframes chatBubblePop {
+  0% { transform: scale(0.2); opacity: 0; }
+  80% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes popupZoom {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes slideLeft {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
 @keyframes shake {
   0% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
@@ -351,21 +363,52 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* Utilities & Components */
+/* Fast hardware-accelerated transitions across the web app */
+.glass-panel,
+.card-hover,
+.task-card-item,
+.btn,
+.sidebar button,
+.tag,
+.input,
+select,
+button {
+  will-change: transform;
+}
+
 .glass-panel {
-  background: var(--glass-bg); /* Sử dụng biến chủ đề */
-  backdrop-filter: blur(20px); /* Tăng độ mờ nền */
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border); /* Sử dụng viền biến chủ đề */
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-lg);
   border-radius: var(--radius-lg);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.card-hover {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: var(--shadow-3d);
-  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.45);
+  border-color: rgba(168, 85, 247, 0.6);
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.08));
   z-index: 10;
+}
+
+.task-card-item {
+  position: relative;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.task-card-item:hover {
+  position: relative;
+  z-index: 20 !important;
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(168, 85, 247, 0.45) !important;
+  border-color: rgba(192, 132, 252, 0.7) !important;
 }
 
 .btn {
@@ -377,10 +420,14 @@ body {
   border-radius: var(--radius-md);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   border: none;
   font-family: inherit;
   font-size: 0.95rem;
+}
+
+.btn:hover {
+  transform: translateY(-2px) scale(1.02);
 }
 
 .btn-primary {
@@ -389,8 +436,8 @@ body {
   box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
 }
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px) scale(1.025);
+  box-shadow: 0 8px 22px rgba(139, 92, 246, 0.6);
 }
 
 .btn-ghost {
@@ -398,8 +445,122 @@ body {
   color: var(--text-muted);
 }
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--text-main);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar .btn:hover {
+  transform: translateY(-1px) translateX(5px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+}
+
+/* Mindmap & Gantt Hover Effects */
+.mindmap-root-node,
+.mindmap-category-node,
+.mindmap-task-node,
+.gantt-bar-item {
+  will-change: transform;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.mindmap-root-node:hover {
+  transform: translateY(-5px) scale(1.05) !important;
+  box-shadow: 0 16px 40px rgba(236, 72, 153, 0.6), 0 0 35px rgba(139, 92, 246, 0.7) !important;
+}
+
+.mindmap-category-node:hover {
+  position: relative;
+  z-index: 15 !important;
+  transform: translateY(-5px) scale(1.04) !important;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45), 0 0 28px var(--group-color, #a855f7) !important;
+  border-color: var(--group-color, #a855f7) !important;
+  cursor: pointer;
+}
+
+.mindmap-select-filter {
+  will-change: transform;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+
+.mindmap-select-filter:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: var(--primary, #a855f7) !important;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35) !important;
+}
+
+.mindmap-tab-btn {
+  will-change: transform;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease !important;
+}
+
+.mindmap-tab-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.45) !important;
+  color: #fff !important;
+  background: rgba(168, 85, 247, 0.3) !important;
+}
+
+.mindmap-tab-btn.active:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.65) !important;
+  background: linear-gradient(135deg, #a855f7, #6366f1) !important;
+}
+
+.mindmap-task-node:hover {
+  position: relative;
+  z-index: 25 !important;
+  transform: translateY(-5px) scale(1.035) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5), 0 0 24px var(--group-color, rgba(168, 85, 247, 0.6)) !important;
+  border-color: var(--group-color, rgba(192, 132, 252, 0.8)) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.gantt-bar-item:hover {
+  z-index: 30 !important;
+  transform: scale(1.05) translateY(-3px) !important;
+  box-shadow: 0 8px 25px var(--bar-color, rgba(139, 92, 246, 0.75)) !important;
+}
+
+/* AI Assistant Modal Hover Effects */
+.ai-modal-tab,
+.ai-suggestion-chip,
+.ai-btn-primary,
+.ai-btn-apply {
+  will-change: transform;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+.ai-modal-tab:hover {
+  transform: translateY(-2px) scale(1.025);
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.4) !important;
+  color: #fff !important;
+  background: rgba(168, 85, 247, 0.35) !important;
+}
+
+.ai-modal-tab.active:hover {
+  transform: translateY(-2px) scale(1.025);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.65) !important;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+}
+
+.ai-suggestion-chip:hover {
+  transform: translateY(-2px) scale(1.04) !important;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.5) !important;
+  border-color: rgba(192, 132, 252, 0.7) !important;
+  background: rgba(168, 85, 247, 0.3) !important;
+  color: #fff !important;
+}
+
+.ai-btn-primary:hover {
+  transform: translateY(-3px) scale(1.025) !important;
+  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.65), 0 0 20px rgba(99, 102, 241, 0.5) !important;
+}
+
+.ai-btn-apply:hover {
+  transform: translateY(-3px) scale(1.025) !important;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.65) !important;
 }
 
 .input {

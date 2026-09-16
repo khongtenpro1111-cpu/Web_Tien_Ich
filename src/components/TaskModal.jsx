@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, CheckSquare, Square } from 'lucide-react';
+import { Plus, X, CheckSquare, Square, Sparkles, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { generateTaskBreakdown } from '../services/aiService';
+import toast from 'react-hot-toast';
 
-export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns = [], defaultPlanType = 'day' }) {
+export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns = [], defaultPlanType = 'day', existingTasks = [] }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -10,6 +12,31 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
   const [priority, setPriority] = useState('medium');
   const [planType, setPlanType] = useState('day');
   const [subtasks, setSubtasks] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAiBreakdown = async () => {
+    if (!title.trim()) {
+      toast.error('Vui lòng nhập Tiêu đề công việc trước khi gọi AI!');
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await generateTaskBreakdown(title, existingTasks);
+      setSubtasks(res.subtasks || []);
+      if (res.priority) setPriority(res.priority);
+      if (res.dueDate && !dueDate) {
+        setDueDate(toLocalISOString(res.dueDate));
+      }
+      if (res.content && !content) {
+        setContent(res.content);
+      }
+      toast.success('AI đã tự động tạo Subtasks & Xếp lịch!');
+    } catch (err) {
+      toast.error('Không thể tạo kế hoạch AI lúc này.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // Convert ISO date string / Date to local HTML datetime-local format YYYY-MM-DDTHH:mm
   const toLocalISOString = (dateStr) => {
@@ -131,11 +158,34 @@ export default function TaskModal({ isOpen, onClose, onSave, taskToEdit, columns
           </div>
 
           <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '6px' }}>
               <label style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.85rem' }}>Công việc con (Checklist)</label>
-              <button type="button" onClick={addSubtask} className="btn btn-ghost" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }}>
-                <Plus size={14} style={{ marginRight: '0.2rem' }}/> Thêm
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={handleAiBreakdown}
+                  disabled={aiLoading}
+                  style={{
+                    padding: '0.25rem 0.65rem',
+                    fontSize: '0.78rem',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(168, 85, 247, 0.4)',
+                    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(99, 102, 241, 0.25))',
+                    color: '#c084fc',
+                    cursor: aiLoading ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  {aiLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  AI Phân Rã & Xếp Lịch
+                </button>
+                <button type="button" onClick={addSubtask} className="btn btn-ghost" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }}>
+                  <Plus size={14} style={{ marginRight: '0.2rem' }}/> Thêm
+                </button>
+              </div>
             </div>
             
             {subtasks.length > 0 && (

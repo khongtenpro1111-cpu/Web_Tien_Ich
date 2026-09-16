@@ -4,11 +4,15 @@ import './App.css';
 import KanbanBoard from './components/KanbanBoard';
 import CalendarView from './components/CalendarView';
 import ArchiveView from './components/ArchiveView';
+import MindmapGanttView from './components/MindmapGanttView';
+import AnalyticsDashboardView from './components/AnalyticsDashboardView';
 import AuthScreen from './components/AuthScreen';
 import TaskModal from './components/TaskModal';
 import UserProfileModal from './components/UserProfileModal';
 import ConfirmModal from './components/ConfirmModal';
-import { Calendar, Bell, Plus, Search, Trash2, MoveRight, Star, Filter, LayoutGrid, CalendarDays, Archive, LogOut, Menu, Sun, Moon } from 'lucide-react';
+import AIAssistantModal from './components/AIAssistantModal';
+import FocusModeModal from './components/FocusModeModal';
+import { Calendar, Bell, Plus, Search, Trash2, MoveRight, Star, Filter, LayoutGrid, CalendarDays, Archive, LogOut, Menu, Sun, Moon, Sparkles, Zap, GitFork, Trophy } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { db, auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -41,9 +45,30 @@ function App() {
   }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
+  const [focusTask, setFocusTask] = useState(null);
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+
+  const handleStartFocus = (task = null) => {
+    if (task) {
+      setFocusTask(task);
+    } else if (tasks.length > 0) {
+      setFocusTask(tasks[0]);
+    } else {
+      setFocusTask(null);
+    }
+    setIsFocusModeOpen(true);
+  };
+
+  const handleUpdateTaskSubtasks = (taskId, updatedSubtasks) => {
+    setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? { ...t, subtasks: updatedSubtasks } : t));
+    if (focusTask && focusTask.id === taskId) {
+      setFocusTask(prev => ({ ...prev, subtasks: updatedSubtasks }));
+    }
+  };
   
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -297,6 +322,29 @@ function App() {
     }
   };
 
+  const handleAddAITask = async (aiTaskData) => {
+    try {
+      const defaultColumnId = columns[0]?.id || `${currentUser?.uid}_todo`;
+      const newTask = {
+        title: aiTaskData.title,
+        content: aiTaskData.content,
+        priority: aiTaskData.priority || 'medium',
+        subtasks: aiTaskData.subtasks || [],
+        dueDate: aiTaskData.dueDate || '',
+        columnId: defaultColumnId,
+        planType: ['day', 'week', 'month', 'year'].includes(viewMode) ? viewMode : 'day',
+        isArchived: false,
+        notified: false,
+        createdAt: new Date().toISOString(),
+        userId: currentUser?.uid
+      };
+      await addDoc(collection(db, 'tasks'), newTask);
+    } catch (e) {
+      toast.error('Lỗi khi thêm task AI!');
+      console.error(e);
+    }
+  };
+
   const handleEditTask = (task) => {
     setTaskToEdit(task);
     setIsModalOpen(true);
@@ -498,13 +546,35 @@ function App() {
       )}
       <div className={`sidebar ${isMobileSidebarOpen ? 'mobile-open' : ''}`}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '2rem', letterSpacing: '-0.5px', textShadow: '0 2px 10px rgba(139,92,246,0.3)' }}>TaskMaster</h2>
-        <button 
-          className="btn btn-primary" 
-          style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
-          onClick={() => { setTaskToEdit(null); setIsModalOpen(true); setIsMobileSidebarOpen(false); }}
-        >
-          <Plus size={20} /> Tạo Mới
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button 
+            className="btn btn-primary" 
+            style={{ justifyContent: 'flex-start', padding: '0.75rem 1rem' }}
+            onClick={() => { setTaskToEdit(null); setIsModalOpen(true); setIsMobileSidebarOpen(false); }}
+          >
+            <Plus size={20} /> Tạo Mới
+          </button>
+          <button 
+            className="btn" 
+            style={{ 
+              justify: 'flex-start', 
+              padding: '0.75rem 1rem',
+              background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '10px',
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onClick={() => { setIsAIModalOpen(true); setIsMobileSidebarOpen(false); }}
+          >
+            <Sparkles size={20} /> Trợ Lý AI
+          </button>
+        </div>
         <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 'bold', margin: '0 0 0.5rem 0.5rem' }}>Kế hoạch</p>
           <button 
@@ -538,11 +608,32 @@ function App() {
           
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 'bold', margin: '1rem 0 0.5rem 0.5rem' }}>Góc nhìn</p>
           <button 
+            className={`btn ${viewMode === 'analytics' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start', color: viewMode === 'analytics' ? '#fff' : '#f59e0b' }}
+            onClick={() => { setViewMode('analytics'); setIsMobileSidebarOpen(false); }}
+          >
+            <Trophy size={18} /> Phân Tích & Thành Tích
+          </button>
+          <button 
+            className={`btn ${viewMode === 'mindmap' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start' }}
+            onClick={() => { setViewMode('mindmap'); setIsMobileSidebarOpen(false); }}
+          >
+            <GitFork size={18} /> Mindmap & Gantt
+          </button>
+          <button 
             className={`btn ${viewMode === 'calendar' ? 'btn-primary' : 'btn-ghost'}`} 
             style={{ justifyContent: 'flex-start' }}
             onClick={() => { setViewMode('calendar'); setIsMobileSidebarOpen(false); }}
           >
             <CalendarDays size={18} /> Lịch Công Việc
+          </button>
+          <button 
+            className="btn btn-ghost" 
+            style={{ justifyContent: 'flex-start', color: '#c084fc' }}
+            onClick={() => { handleStartFocus(); setIsMobileSidebarOpen(false); }}
+          >
+            <Zap size={18} /> Chế độ Tập trung
           </button>
           <button 
             className={`btn ${viewMode === 'archive' ? 'btn-primary' : 'btn-ghost'}`} 
@@ -554,16 +645,24 @@ function App() {
         </div>
         <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 'bold', margin: '0 0 0.5rem 0.5rem' }}>Thống kê nhanh</p>
-          <button className="btn btn-ghost" style={{ justifyContent: 'flex-start', pointerEvents: 'none' }}>
+          <button 
+            className={`btn ${viewMode === 'day' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start', cursor: 'pointer' }}
+            onClick={() => { setViewMode('day'); setIsMobileSidebarOpen(false); }}
+          >
             <Calendar size={18} /> Hôm nay ({tasks.filter(t => t.dueDate && new Date(t.dueDate).toDateString() === new Date().toDateString()).length})
           </button>
           <button 
-            className={`btn btn-ghost`} 
-            style={{ justifyContent: 'flex-start', pointerEvents: 'none' }}
+            className={`btn ${filterStatus === 'overdue' ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ justifyContent: 'flex-start', cursor: 'pointer' }}
+            onClick={() => { 
+              setFilterStatus(prev => prev === 'overdue' ? 'all' : 'overdue'); 
+              setIsMobileSidebarOpen(false); 
+            }}
           >
             <Bell size={18} /> 
             Đến hạn / Quá hạn ({alertCount})
-            </button>
+          </button>
           </div>
           
           <div style={{ marginTop: 'auto', paddingTop: '2rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -586,6 +685,8 @@ function App() {
                viewMode === 'week' ? 'Kế hoạch Tuần' : 
                viewMode === 'month' ? 'Kế hoạch Tháng' : 
                viewMode === 'year' ? 'Kế hoạch Năm' : 
+               viewMode === 'analytics' ? 'Phân Tích & Thành Tích' :
+               viewMode === 'mindmap' ? 'Sơ đồ Mindmap & Tiến độ Gantt' : 
                viewMode === 'calendar' ? 'Lịch Công Việc' : 'Kho lưu trữ'}
             </h1>
           </div>
@@ -766,6 +867,21 @@ function App() {
             onEditColumn={handleEditColumn}
             onDeleteColumn={handleDeleteColumn}
           />
+        ) : viewMode === 'analytics' ? (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+            <AnalyticsDashboardView
+              tasks={tasks}
+              columns={columns}
+            />
+          </div>
+        ) : viewMode === 'mindmap' ? (
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: '10px' }}>
+            <MindmapGanttView
+              tasks={filteredTasks}
+              columns={columns}
+              onEditTask={handleEditTask}
+            />
+          </div>
         ) : viewMode === 'archive' ? (
           <ArchiveView userId={currentUser.uid} />
         ) : (
@@ -845,6 +961,21 @@ function App() {
         taskToEdit={taskToEdit}
         columns={columns}
         defaultPlanType={['day', 'week', 'month', 'year'].includes(viewMode) ? viewMode : 'day'}
+        existingTasks={tasks}
+      />
+      <AIAssistantModal
+        isOpen={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        onToggle={() => setIsAIModalOpen(prev => !prev)}
+        onAddTask={handleAddAITask}
+        tasks={tasks}
+        columns={columns}
+      />
+      <FocusModeModal
+        isOpen={isFocusModeOpen}
+        onClose={() => setIsFocusModeOpen(false)}
+        task={focusTask}
+        onUpdateTaskSubtasks={handleUpdateTaskSubtasks}
       />
       <UserProfileModal 
         isOpen={isProfileModalOpen} 

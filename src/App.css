@@ -227,14 +227,63 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     padding: 0.25rem 0.75rem !important;
     font-size: 0.8rem !important;
   }
+  
+  /* Responsive Mindmap & Gantt View */
+  .mindmap-branches {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+  .mindmap-branch-column {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .mindmap-canvas-container {
+    padding: 10px !important;
+  }
+  .gantt-chart-wrapper {
+    min-width: 580px !important;
+  }
+  .gantt-header-row, .gantt-task-row {
+    grid-template-columns: 130px 1fr !important;
+  }
+
+  /* Responsive Focus Mode Modal */
+  .focus-mode-selectors {
+    flex-wrap: wrap !important;
+  }
+  .focus-mode-selectors button {
+    padding: 6px 8px !important;
+    font-size: 0.72rem !important;
+  }
+  .focus-start-btn {
+    padding: 8px 14px !important;
+    font-size: 0.8rem !important;
+  }
+  .focus-bottom-panel {
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+    gap: 14px !important;
+  }
+}
+.sparkle-rotate {
+  animation: pulseRotate 3s infinite linear;
+}
+@keyframes pulseRotate {
+  0% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(180deg); }
+  100% { transform: scale(1) rotate(360deg); }
+}
+.ai-floating-btn:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 30px rgba(168, 85, 247, 0.7), 0 0 20px rgba(99, 102, 241, 0.6) !important;
 }
 .mobile-fab {
   display: flex;
   position: fixed;
-  bottom: 2.5rem;
-  right: 2.5rem;
-  width: 56px;
-  height: 56px;
+  bottom: 24px;
+  right: 24px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: var(--primary);
   color: white;

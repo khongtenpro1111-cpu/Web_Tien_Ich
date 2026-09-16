@@ -16,7 +16,7 @@ import { Plus } from 'lucide-react';
 
 export default function KanbanBoard({ 
   tasks, setTasks, columns, setColumns, onEditTask, onUpdateTask,
-  selectedTaskIds = [], onSelectTask, onAddColumn, onEditColumn, onDeleteColumn 
+  selectedTaskIds = [], onSelectTask, onAddColumn, onEditColumn, onDeleteColumn, onStartFocus 
 }) {
   const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
   
@@ -80,6 +80,7 @@ export default function KanbanBoard({
                 onSelectTask={onSelectTask}
                 onOpenEditModal={handleOpenEditModal}
                 onDeleteColumn={onDeleteColumn}
+                onStartFocus={onStartFocus}
               />
             ))}
           </SortableContext>

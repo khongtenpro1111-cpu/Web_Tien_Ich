@@ -2,11 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskCard from './TaskCard';
-import { Edit2, Trash2, Check, X } from 'lucide-react';
+import { Edit2, Trash2, Check, X, GripVertical } from 'lucide-react';
 
-export default function Column({ column, tasks, onEditTask, selectedTaskIds = [], onSelectTask, onOpenEditModal, onDeleteColumn }) {
+export default function Column({ 
+  column, 
+  tasks, 
+  onDeleteColumn, 
+  onOpenEditModal, 
+  onEditTask, 
+  isFixedColumn = column.isDefault || ['todo', 'in-progress', 'done'].some(id => column.id === id || column.id.endsWith('_' + id)), 
+  selectedTaskIds = [], 
+  onSelectTask, 
+  onStartFocus 
+}) {
   const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
-  const isFixedColumn = column.isDefault || ['todo', 'in-progress', 'done'].some(id => column.id === id || column.id.endsWith('_' + id));
 
   const {
     setNodeRef,
@@ -21,6 +30,7 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
       type: 'Column',
       column,
     },
+    disabled: isFixedColumn,
   });
 
   const style = {
@@ -32,17 +42,17 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
     return (
       <div
         ref={setNodeRef}
+        className="glass-panel"
         style={{
           ...style,
           width: '280px',
           minWidth: '280px',
-          minHeight: '500px',
-          background: 'rgba(30, 41, 59, 0.3)',
-          border: '2px solid var(--primary)',
-          borderRadius: '8px',
+          height: '100%',
+          maxHeight: '100%',
           opacity: 0.4,
+          border: '2px dashed var(--primary)',
         }}
-      ></div>
+      />
     );
   }
 
@@ -73,60 +83,22 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
           flexShrink: 0,
         }}
       >
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
-          <h3 
-            style={{ 
-              fontSize: '1.15rem', 
-              fontWeight: 700, 
-              margin: 0, 
-              display: 'flex', 
-              alignItems: 'flex-start', 
-              gap: '0.4rem',
-              color: column.color || '#fff',
-              letterSpacing: '0.3px',
-              textShadow: `0 0 10px ${column.color || '#3b82f6'}44`,
-              minWidth: 0,
-              width: '100%',
-            }}
-          >
-            <span 
-              style={{ 
-                width: '9px', 
-                height: '9px', 
-                borderRadius: '50%', 
-                background: column.color || '#fff', 
-                boxShadow: `0 0 8px ${column.color || '#fff'}`,
-                display: 'inline-block',
-                flexShrink: 0,
-                marginTop: '0.4rem',
-              }} 
-            />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {!isFixedColumn && (
+            <button {...attributes} {...listeners} className="btn btn-ghost" style={{ cursor: 'grab', padding: '0.2rem' }}>
+              <GripVertical size={16} />
+            </button>
+          )}
+          <h3 style={{ fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: column.color || '#64748b' }} />
+            {column.title}
             <span
               style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                wordBreak: 'break-word',
-                lineHeight: '1.3',
-                minWidth: 0,
-                flex: '1 1 auto',
-              }}
-              title={column.title}
-            >
-              {column.title}
-            </span>
-            <span 
-              style={{ 
-                marginLeft: '2px', 
-                padding: '2px 8px', 
-                background: `${column.color || '#fff'}22`, 
-                border: `1px solid ${column.color || '#fff'}44`,
-                borderRadius: '12px', 
-                fontSize: '0.8rem', 
-                fontWeight: 600,
-                color: column.color || '#fff',
-                flexShrink: 0,
+                fontSize: '0.75rem',
+                background: 'var(--input-bg)',
+                padding: '0.1rem 0.4rem',
+                borderRadius: '10px',
+                color: 'var(--text-muted)',
                 marginTop: '0.1rem',
               }}
             >
@@ -147,7 +119,7 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
         )}
       </div>
 
-      <div className="column-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flexGrow: 1, overflowY: 'auto', paddingRight: '4px' }}>
+      <div className="column-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flexGrow: 1, overflowY: 'auto', padding: '10px 6px 10px 4px', margin: '-6px 0' }}>
         <SortableContext items={taskIds}>
           {tasks.map((task) => (
             <TaskCard 
@@ -157,6 +129,7 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
               onEdit={() => onEditTask?.(task)} 
               isSelected={selectedTaskIds.includes(task.id)}
               onSelectTask={onSelectTask}
+              onStartFocus={onStartFocus}
             />
           ))}
         </SortableContext>

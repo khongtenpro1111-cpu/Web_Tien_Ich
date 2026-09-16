@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createEvent } from 'ics';
-import { Edit2, Calendar, CheckSquare, Bell, GripVertical, X } from 'lucide-react';
+import { Edit2, Calendar, CheckSquare, Bell, GripVertical, X, Zap } from 'lucide-react';
 
-export default function TaskCard({ task, column, onEdit, isSelected, onSelectTask }) {
+export default function TaskCard({ task, column, onEdit, isSelected, onSelectTask, onStartFocus }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
@@ -146,6 +146,15 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
         </div>
         
         <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <button 
+            onPointerDown={(e) => e.stopPropagation()} 
+            onClick={(e) => { e.stopPropagation(); onStartFocus?.(task); }}
+            className="btn btn-ghost" 
+            style={{ padding: '0.25rem', color: '#c084fc' }}
+            title="Vào Chế độ Tập trung (Focus Mode)"
+          >
+            <Zap size={14} />
+          </button>
           <button 
             onPointerDown={(e) => e.stopPropagation()} 
             onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
