@@ -15,9 +15,9 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 
 const initialColumns = [
-  { id: 'todo', title: 'Cần làm', color: '#64748b', order: 0 },
-  { id: 'in-progress', title: 'Đang làm', color: '#3b82f6', order: 1 },
-  { id: 'done', title: 'Hoàn thành', color: '#10b981', order: 2 },
+  { id: 'todo', title: 'Cần làm', color: '#f59e0b', order: 0, isDefault: true },
+  { id: 'in-progress', title: 'Đang làm', color: '#3b82f6', order: 1, isDefault: true },
+  { id: 'done', title: 'Hoàn thành', color: '#10b981', order: 2, isDefault: true },
 ];
 
 const initialTasks = [
@@ -156,10 +156,22 @@ function App() {
       } else {
         const colsData = docs.map(d => {
           const data = { id: d.id, ...d.data() };
-          // Mark default columns
+          // Mark default columns & fix their titles
           const baseId = d.id.replace(`${currentUser.uid}_`, '');
-          if (['todo', 'in-progress', 'done'].includes(baseId)) {
+          if (['todo', 'in-progress', 'done'].includes(baseId) || data.isDefault) {
             data.isDefault = true;
+            if (baseId === 'todo' || d.id === 'todo') {
+              data.title = 'Cần làm';
+              if (!data.color || data.color === '#64748b') data.color = '#f59e0b';
+            }
+            if (baseId === 'in-progress' || d.id === 'in-progress') {
+              data.title = 'Đang làm';
+              if (!data.color) data.color = '#3b82f6';
+            }
+            if (baseId === 'done' || d.id === 'done') {
+              data.title = 'Hoàn thành';
+              if (!data.color) data.color = '#10b981';
+            }
           }
           return data;
         });
@@ -334,6 +346,12 @@ function App() {
   };
 
   const handleEditColumn = async (colId, newTitle, newColor) => {
+    const col = columns.find(c => c.id === colId);
+    const baseId = colId.replace(`${currentUser?.uid}_`, '');
+    if (col?.isDefault || ['todo', 'in-progress', 'done'].includes(baseId)) {
+      toast.error('Không thể thay đổi tiêu đề của 3 cột mặc định!');
+      return;
+    }
     try {
       await updateDoc(doc(db, 'columns', colId), { title: newTitle, color: newColor });
     } catch (e) {

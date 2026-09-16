@@ -11,6 +11,7 @@ import {
 import { SortableContext, arrayMove } from '@dnd-kit/sortable';
 import Column from './Column';
 import TaskCard from './TaskCard';
+import ColumnModal from './ColumnModal';
 import { Plus } from 'lucide-react';
 
 export default function KanbanBoard({ 
@@ -21,15 +22,27 @@ export default function KanbanBoard({
   
   const [activeColumn, setActiveColumn] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
-  const [isAdding, setIsAdding] = useState(false);
-  const [newColTitle, setNewColTitle] = useState('');
+  
+  // Column Modal State
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [columnToEdit, setColumnToEdit] = useState(null);
 
-  const handleAddSubmit = (e) => {
-    e.preventDefault();
-    if (!newColTitle.trim()) return;
-    onAddColumn(newColTitle.trim(), '#8b5cf6');
-    setNewColTitle('');
-    setIsAdding(false);
+  const handleOpenAddModal = () => {
+    setColumnToEdit(null);
+    setIsColumnModalOpen(true);
+  };
+
+  const handleOpenEditModal = (col) => {
+    setColumnToEdit(col);
+    setIsColumnModalOpen(true);
+  };
+
+  const handleSaveColumnModal = (title, color) => {
+    if (columnToEdit) {
+      onEditColumn?.(columnToEdit.id, title, color);
+    } else {
+      onAddColumn?.(title, color);
+    }
   };
 
   const sensors = useSensors(
@@ -47,79 +60,32 @@ export default function KanbanBoard({
   );
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragOver={onDragOver}
-    >
-      <div className="board-container" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', padding: '1rem', width: '100%', height: '100%', alignItems: 'stretch' }}>
-        <SortableContext items={columnsId}>
-          {columns.map((col) => (
-            <Column
-              key={col.id}
-              column={col}
-              tasks={tasks.filter((task) => task.columnId === col.id)}
-              onEditTask={onEditTask}
-              selectedTaskIds={selectedTaskIds}
-              onSelectTask={onSelectTask}
-              onEditColumn={onEditColumn}
-              onDeleteColumn={onDeleteColumn}
-            />
-          ))}
-        </SortableContext>
-        
-        {isAdding ? (
-          <form 
-            onSubmit={handleAddSubmit}
-            style={{
-              minWidth: '280px',
-              padding: '1rem',
-              background: 'rgba(15, 23, 42, 0.6)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 'var(--radius-lg)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem',
-            }}
-          >
-            <input 
-              type="text" 
-              placeholder="Tên cột mới..." 
-              value={newColTitle}
-              onChange={(e) => setNewColTitle(e.target.value)}
-              className="input"
-              autoFocus
-              required
-              style={{
-                width: '100%',
-                padding: '0.5rem 0.75rem',
-                fontSize: '0.9rem',
-              }}
-            />
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button 
-                type="button" 
-                className="btn btn-ghost" 
-                style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
-                onClick={() => { setIsAdding(false); setNewColTitle(''); }}
-              >
-                Hủy
-              </button>
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
-              >
-                Lưu
-              </button>
-            </div>
-          </form>
-        ) : (
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+      >
+        <div className="board-container" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', padding: '1rem', width: '100%', height: '100%', alignItems: 'stretch' }}>
+          <SortableContext items={columnsId}>
+            {columns.map((col) => (
+              <Column
+                key={col.id}
+                column={col}
+                tasks={tasks.filter((task) => task.columnId === col.id)}
+                onEditTask={onEditTask}
+                selectedTaskIds={selectedTaskIds}
+                onSelectTask={onSelectTask}
+                onOpenEditModal={handleOpenEditModal}
+                onDeleteColumn={onDeleteColumn}
+              />
+            ))}
+          </SortableContext>
+          
           <button 
-            onClick={() => setIsAdding(true)}
+            onClick={handleOpenAddModal}
             style={{
               minWidth: '280px',
               height: 'fit-content',
@@ -140,8 +106,7 @@ export default function KanbanBoard({
           >
             <Plus size={20} /> Thêm Cột Mới
           </button>
-        )}
-      </div>
+        </div>
 
       <DragOverlay>
         {activeColumn && (
@@ -153,7 +118,15 @@ export default function KanbanBoard({
         {activeTask && <TaskCard task={activeTask} />}
       </DragOverlay>
     </DndContext>
-  );
+
+    <ColumnModal 
+      isOpen={isColumnModalOpen}
+      onClose={() => setIsColumnModalOpen(false)}
+      onSave={handleSaveColumnModal}
+      columnToEdit={columnToEdit}
+    />
+  </>
+);
 
   function onDragStart(event) {
     if (event.active.data.current?.type === 'Column') {

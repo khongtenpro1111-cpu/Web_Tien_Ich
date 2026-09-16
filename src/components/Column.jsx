@@ -4,11 +4,9 @@ import { CSS } from '@dnd-kit/utilities';
 import TaskCard from './TaskCard';
 import { Edit2, Trash2, Check, X } from 'lucide-react';
 
-export default function Column({ column, tasks, onEditTask, selectedTaskIds = [], onSelectTask, onEditColumn, onDeleteColumn }) {
+export default function Column({ column, tasks, onEditTask, selectedTaskIds = [], onSelectTask, onOpenEditModal, onDeleteColumn }) {
   const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(column.title);
-  const [editColor, setEditColor] = useState(column.color || '#64748b');
+  const isFixedColumn = column.isDefault || ['todo', 'in-progress', 'done'].some(id => column.id === id || column.id.endsWith('_' + id));
 
   const {
     setNodeRef,
@@ -28,16 +26,6 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
-  };
-
-  const handleSaveTitle = () => {
-    if (editTitle.trim()) {
-      onEditColumn?.(column.id, editTitle.trim(), editColor);
-    } else {
-      setEditTitle(column.title);
-      setEditColor(column.color || '#64748b');
-    }
-    setIsEditing(false);
   };
 
   if (isDragging) {
@@ -85,53 +73,78 @@ export default function Column({ column, tasks, onEditTask, selectedTaskIds = []
           flexShrink: 0,
         }}
       >
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-          {isEditing ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
-              <input 
-                type="color" 
-                value={editColor} 
-                onChange={(e) => setEditColor(e.target.value)} 
-                style={{ width: '24px', height: '24px', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
-              />
-              <input 
-                autoFocus
-                className="input"
-                style={{ padding: '0.25rem 0.5rem', background: 'var(--bg-surface)', flex: 1 }}
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); }}
-              />
-            </div>
-          ) : (
-            <h3 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', color: column.color || '#fff' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          <h3 
+            style={{ 
+              fontSize: '1.15rem', 
+              fontWeight: 700, 
+              margin: 0, 
+              display: 'flex', 
+              alignItems: 'flex-start', 
+              gap: '0.4rem',
+              color: column.color || '#fff',
+              letterSpacing: '0.3px',
+              textShadow: `0 0 10px ${column.color || '#3b82f6'}44`,
+              minWidth: 0,
+              width: '100%',
+            }}
+          >
+            <span 
+              style={{ 
+                width: '9px', 
+                height: '9px', 
+                borderRadius: '50%', 
+                background: column.color || '#fff', 
+                boxShadow: `0 0 8px ${column.color || '#fff'}`,
+                display: 'inline-block',
+                flexShrink: 0,
+                marginTop: '0.4rem',
+              }} 
+            />
+            <span
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                wordBreak: 'break-word',
+                lineHeight: '1.3',
+                minWidth: 0,
+                flex: '1 1 auto',
+              }}
+              title={column.title}
+            >
               {column.title}
-              <span style={{ marginLeft: '8px', padding: '2px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {tasks.length}
-              </span>
-            </h3>
-          )}
+            </span>
+            <span 
+              style={{ 
+                marginLeft: '2px', 
+                padding: '2px 8px', 
+                background: `${column.color || '#fff'}22`, 
+                border: `1px solid ${column.color || '#fff'}44`,
+                borderRadius: '12px', 
+                fontSize: '0.8rem', 
+                fontWeight: 600,
+                color: column.color || '#fff',
+                flexShrink: 0,
+                marginTop: '0.1rem',
+              }}
+            >
+              {tasks.length}
+            </span>
+          </h3>
         </div>
         
-        <div style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem' }}>
-          {isEditing ? (
-            <>
-              <button className="btn btn-ghost" style={{ padding: '0.25rem' }} onClick={handleSaveTitle}><Check size={16} color="var(--success)" /></button>
-              <button className="btn btn-ghost" style={{ padding: '0.25rem' }} onClick={() => { setEditTitle(column.title); setEditColor(column.color || '#64748b'); setIsEditing(false); }}><X size={16} color="var(--danger)" /></button>
-            </>
-          ) : (
-            <>
-              <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => setIsEditing(true)}>
-                <Edit2 size={14} />
-              </button>
-              {!column.isDefault && (
-                <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => onDeleteColumn?.(column.id)}>
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </>
-          )}
-        </div>
+        {!isFixedColumn && (
+          <div style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem', flexShrink: 0 }}>
+            <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => onOpenEditModal?.(column)} title="Sửa cột">
+              <Edit2 size={14} />
+            </button>
+            <button className="btn btn-ghost" style={{ padding: '0.25rem', color: 'var(--text-muted)' }} onClick={() => onDeleteColumn?.(column.id)} title="Xóa cột">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="column-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flexGrow: 1, overflowY: 'auto', paddingRight: '4px' }}>
