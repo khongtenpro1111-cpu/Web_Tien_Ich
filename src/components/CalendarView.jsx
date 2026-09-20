@@ -6,7 +6,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus } from 'lucide-react';
 
-export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTask }) {
+export default function CalendarView({ tasks = [], columns = [], onEditTask, onAddTask, onUpdateTask }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const daysInMonth = useMemo(() => {
@@ -224,8 +224,8 @@ export default function CalendarView({ tasks, onEditTask, onAddTask, onUpdateTas
                   display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: 1, paddingRight: '2px' 
                 }} className="calendar-tasks-scroll">
                   {dayTasks.map(task => {
-                    const isDone = task.columnId === 'done';
-                    const isOverdue = !isDone && new Date(task.dueDate) < new Date();
+                    const isDone = task.columnId === 'done' || (typeof task.columnId === 'string' && task.columnId.endsWith('_done')) || columns.some(c => c.id === task.columnId && c.title === 'Hoàn thành');
+                    const isOverdue = !isDone && task.dueDate && new Date(task.dueDate) < new Date();
                     
                     let bgVar, borderVar, icon;
                     if (isDone) {

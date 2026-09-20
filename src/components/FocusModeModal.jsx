@@ -1,8 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Volume2, X, CheckSquare, Square, Flame, Waves, CloudRain, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Play, Pause, RotateCcw, SkipForward, Volume2, X, CheckSquare, Square, Flame, Waves, CloudRain, Zap, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export default function FocusModeModal({ isOpen, onClose, task, onUpdateTaskSubtasks }) {
+const isTaskDone = (t, cols) => {
+  if (!t) return false;
+  if (t.columnId === 'done' || (typeof t.columnId === 'string' && t.columnId.endsWith('_done'))) return true;
+  const col = cols.find(c => c.id === t.columnId);
+  if (col && (col.id === 'done' || (typeof col.id === 'string' && col.id.endsWith('_done')) || col.title === 'Hoàn thành')) return true;
+  return false;
+};
+
+export default function FocusModeModal({ isOpen, onClose, task, tasks = [], columns = [], onUpdateTaskSubtasks }) {
+  // Lọc chỉ lấy các công việc CHƯA hoàn thành
+  const uncompletedTasks = useMemo(() => {
+    return tasks.filter(t => !isTaskDone(t, columns));
+  }, [tasks, columns]);
+
+  // Active Focus Task state
+  const [selectedTaskId, setSelectedTaskId] = useState(task?.id || '');
+
+  useEffect(() => {
+    if (task && task.id && !isTaskDone(task, columns)) {
+      setSelectedTaskId(task.id);
+    } else if (uncompletedTasks.length > 0) {
+      if (!selectedTaskId || !uncompletedTasks.some(t => t.id === selectedTaskId)) {
+        setSelectedTaskId(uncompletedTasks[0].id);
+      }
+    } else {
+      setSelectedTaskId('');
+    }
+  }, [task, uncompletedTasks, columns]);
+
+  const activeTask = uncompletedTasks.find(t => t.id === selectedTaskId) || uncompletedTasks[0] || null;
+
   // Pomodoro States
   const [mode, setMode] = useState('work'); // 'work' | 'shortBreak' | 'longBreak'
   const [timeLeft, setTimeLeft] = useState(25 * 60);
@@ -16,16 +46,16 @@ export default function FocusModeModal({ isOpen, onClose, task, onUpdateTaskSubt
   const soundNodesRef = useRef([]);
 
   const modeDurations = {
-    work: (task?.priority === 'urgent' ? 35 : 25) * 60,
+    work: (activeTask?.priority === 'urgent' || activeTask?.priority === 'high' ? 35 : 25) * 60,
     shortBreak: 5 * 60,
     longBreak: 15 * 60,
   };
 
-  // Reset timer when mode or task changes
+  // Reset timer when mode or active task changes
   useEffect(() => {
     setTimeLeft(modeDurations[mode]);
     setIsRunning(false);
-  }, [mode, task]);
+  }, [mode, selectedTaskId]);
 
   // Pomodoro Countdown Effect
   useEffect(() => {
@@ -287,9 +317,9 @@ export default function FocusModeModal({ isOpen, onClose, task, onUpdateTaskSubt
   const formattedTime = `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
 
   const toggleSubtask = (stId) => {
-    if (!task || !onUpdateTaskSubtasks) return;
-    const updated = (task.subtasks || []).map(st => st.id === stId ? { ...st, completed: !st.completed } : st);
-    onUpdateTaskSubtasks(task.id, updated);
+    if (!activeTask || !onUpdateTaskSubtasks) return;
+    const updated = (activeTask.subtasks || []).map(st => st.id === stId ? { ...st, completed: !st.completed } : st);
+    onUpdateTaskSubtasks(activeTask.id, updated);
   };
 
   return (
@@ -500,12 +530,42 @@ export default function FocusModeModal({ isOpen, onClose, task, onUpdateTaskSubt
       <div className="focus-bottom-panel" style={{ width: '100%', maxWidth: '900px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: 'rgba(255,255,255,0.04)', padding: '18px 24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)' }}>
         {/* Task Details & Subtasks */}
         <div>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '1rem', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Flame size={18} /> {task ? task.title : 'Công việc tự do'}
-          </h4>
-          {task?.subtasks && task.subtasks.length > 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+            <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Target size={18} /> Đang tập trung:
+            </h4>
+            {uncompletedTasks && uncompletedTasks.length > 0 && (
+              <select
+                value={activeTask?.id || ''}
+                onChange={(e) => setSelectedTaskId(e.target.value)}
+                style={{
+                  background: 'rgba(30, 41, 59, 0.85)',
+                  color: '#fff',
+                  border: '1px solid rgba(192, 132, 252, 0.4)',
+                  borderRadius: '10px',
+                  padding: '3px 8px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  maxWidth: '220px',
+                  outline: 'none'
+                }}
+              >
+                {uncompletedTasks.map(t => (
+                  <option key={t.id} value={t.id} style={{ background: '#1e293b', color: '#fff' }}>
+                    {t.priority === 'high' || t.priority === 'urgent' ? '🔥 ' : ''}{t.title}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>
+            {activeTask ? activeTask.title : 'Công việc tự do'}
+          </h3>
+
+          {activeTask?.subtasks && activeTask.subtasks.length > 0 ? (
             <div style={{ maxHeight: '110px', overflowY: 'auto', paddingRight: '6px' }}>
-              {task.subtasks.map(st => (
+              {activeTask.subtasks.map(st => (
                 <div
                   key={st.id}
                   onClick={() => toggleSubtask(st.id)}
@@ -527,7 +587,7 @@ export default function FocusModeModal({ isOpen, onClose, task, onUpdateTaskSubt
             </div>
           ) : (
             <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
-              {task?.content || 'Giữ tâm trí thanh thản và tập trung giải quyết mục tiêu hiện tại!'}
+              {activeTask?.content || 'Giữ tâm trí thanh thản và tập trung giải quyết mục tiêu hiện tại!'}
             </p>
           )}
         </div>

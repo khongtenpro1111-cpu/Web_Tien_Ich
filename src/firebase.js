@@ -1,7 +1,7 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDBWVzIDXGRww3wFltUHxLjoxS1NPDRqhM",
@@ -15,3 +15,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+// Đảm bảo trình duyệt tự động lưu phiên đăng nhập ngay từ khi khởi tạo
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.error("Lỗi cài đặt lưu phiên đăng nhập:", err);
+});
+

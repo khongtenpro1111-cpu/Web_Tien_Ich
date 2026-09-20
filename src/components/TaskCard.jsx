@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createEvent } from 'ics';
 import { Edit2, Calendar, CheckSquare, Bell, GripVertical, X, Zap } from 'lucide-react';
+import { formatReminderText } from '../utils/reminderUtils';
 
 export default function TaskCard({ task, column, onEdit, isSelected, onSelectTask, onStartFocus }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -72,9 +73,11 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
     );
   }
 
-  const isDone = task.columnId === 'done' || task.columnId.endsWith('_done');
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isDone;
-  const isDueToday = task.dueDate && !isDone && !isOverdue && new Date(task.dueDate).toDateString() === new Date().toDateString();
+  const isDone = task.columnId === 'done' || (typeof task.columnId === 'string' && task.columnId.endsWith('_done')) || (column && (column.id === 'done' || (typeof column.id === 'string' && column.id.endsWith('_done')) || column.title === 'Hoàn thành'));
+  const now = new Date();
+  const taskDueDate = task.dueDate ? new Date(task.dueDate) : null;
+  const isOverdue = taskDueDate && !isDone && taskDueDate < now;
+  const isDueToday = taskDueDate && !isDone && !isOverdue && taskDueDate.toDateString() === now.toDateString();
   const priorityClass = task.priority ? `tag-${task.priority}` : 'tag-medium';
   const priorityLabel = task.priority === 'high' ? '🔥 Khẩn cấp' : (task.priority === 'low' ? '🌱 Thấp' : '⚡ Trung bình');
 
@@ -91,7 +94,7 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
         cursor: 'default',
         touchAction: 'auto',
         position: 'relative',
-        borderLeft: isOverdue ? '4px solid var(--danger)' : '4px solid transparent',
+        borderLeft: isOverdue ? '4px solid var(--danger)' : (isDueToday ? '4px solid #f59e0b' : '4px solid transparent'),
         boxShadow: isSelected ? '0 0 0 2px var(--primary)' : 'var(--shadow-lg)',
       }}
       className={`glass-panel card-hover task-card-item ${isOverdue ? 'overdue-pulse shake-animation' : ''}`}
@@ -150,7 +153,7 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
             onPointerDown={(e) => e.stopPropagation()} 
             onClick={(e) => { e.stopPropagation(); onStartFocus?.(task); }}
             className="btn btn-ghost" 
-            style={{ padding: '0.25rem', color: '#c084fc' }}
+            style={{ padding: '0.25rem', color: 'var(--primary)' }}
             title="Vào Chế độ Tập trung (Focus Mode)"
           >
             <Zap size={14} />
@@ -217,7 +220,7 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
       )}
       
       {task.dueDate && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', flexWrap: 'wrap', gap: '4px' }}>
           <div style={{ fontSize: '0.72rem', color: isOverdue ? 'var(--danger)' : (isDueToday ? 'var(--warning)' : 'var(--text-muted)'), display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: (isOverdue || isDueToday) ? 600 : 400 }}>
             {isOverdue || isDueToday ? (
               <Bell size={12} className={isOverdue ? 'bell-ringing-fast' : 'bell-ringing-slow'} />
@@ -229,7 +232,7 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
           {isOverdue && (
             <span style={{ 
               background: 'rgba(239, 68, 68, 0.2)', 
-              color: '#fca5a5', 
+              color: 'var(--danger)', 
               padding: '2px 8px', 
               borderRadius: '12px', 
               fontSize: '0.7rem', 
@@ -239,6 +242,34 @@ export default function TaskCard({ task, column, onEdit, isSelected, onSelectTas
               animation: 'pulse-border 1.5s infinite'
             }}>
               🚨 Quá hạn!
+            </span>
+          )}
+          {isDueToday && (
+            <span style={{ 
+              background: 'rgba(245, 158, 11, 0.2)', 
+              color: 'var(--warning)', 
+              padding: '2px 8px', 
+              borderRadius: '12px', 
+              fontSize: '0.7rem', 
+              fontWeight: 800,
+              border: '1px solid rgba(245, 158, 11, 0.5)',
+              textTransform: 'uppercase'
+            }}>
+              ⏰ Đến hạn hôm nay!
+            </span>
+          )}
+          {task.reminderOffset > 0 && !isOverdue && !isDueToday && (
+            <span style={{ 
+              background: 'rgba(168, 85, 247, 0.15)', 
+              color: 'var(--primary)', 
+              padding: '2px 8px', 
+              borderRadius: '12px', 
+              fontSize: '0.68rem', 
+              fontWeight: 600,
+              border: '1px solid rgba(168, 85, 247, 0.3)',
+              whiteSpace: 'nowrap'
+            }}>
+              🔔 {formatReminderText(task.reminderOffset)}
             </span>
           )}
         </div>

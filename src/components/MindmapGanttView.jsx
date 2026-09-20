@@ -110,7 +110,7 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
             </select>
           )}
 
-          <div className="mindmap-tab-toggle" style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', flex: '1 1 auto', justifyContent: 'center' }}>
+          <div className="mindmap-tab-toggle" style={{ display: 'flex', background: 'var(--input-bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--glass-border)', flex: '1 1 auto', justifyContent: 'center' }}>
             <button
               className={`mindmap-tab-btn ${activeTab === 'mindmap' ? 'active' : ''}`}
               onClick={() => setActiveTab('mindmap')}
@@ -122,7 +122,7 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                 fontWeight: 600,
                 fontSize: '0.82rem',
                 background: activeTab === 'mindmap' ? 'linear-gradient(135deg, #a855f7, #6366f1)' : 'transparent',
-                color: activeTab === 'mindmap' ? '#fff' : 'rgba(255,255,255,0.7)',
+                color: activeTab === 'mindmap' ? '#fff' : 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -143,7 +143,7 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                 fontWeight: 600,
                 fontSize: '0.82rem',
                 background: activeTab === 'gantt' ? 'linear-gradient(135deg, #a855f7, #6366f1)' : 'transparent',
-                color: activeTab === 'gantt' ? '#fff' : 'rgba(255,255,255,0.7)',
+                color: activeTab === 'gantt' ? '#fff' : 'var(--text-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -161,9 +161,9 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
       <div 
         className="mindmap-canvas-container"
         style={{
-          background: 'var(--bg-surface, rgba(15, 23, 42, 0.7))',
+          background: 'var(--glass-card-bg)',
           borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          border: '1px solid var(--glass-border)',
           padding: '16px',
           position: 'relative',
           overflowX: 'auto',
@@ -220,9 +220,9 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                       width: '100%',
                       padding: '12px 18px',
                       borderRadius: '16px',
-                      background: `rgba(${parseInt(group.color.slice(1,3), 16)}, ${parseInt(group.color.slice(3,5), 16)}, ${parseInt(group.color.slice(5,7), 16)}, 0.18)`,
+                      background: 'var(--glass-card-bg)',
                       border: `2px solid ${group.color}`,
-                      color: group.color,
+                      color: 'var(--text-main)',
                       fontWeight: 700,
                       fontSize: '0.95rem',
                       textAlign: 'center',
@@ -257,22 +257,22 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                           '--group-color': group.color,
                           padding: '12px 14px',
                           borderRadius: '14px',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          background: 'var(--glass-card-bg)',
+                          border: '1px solid var(--glass-border)',
                           cursor: 'pointer',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                         }}
                       >
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#f8fafc', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '4px' }}>
                           {task.title}
                         </div>
                         {task.content && (
-                          <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {task.content}
                           </div>
                         )}
                         {task.subtasks && task.subtasks.length > 0 && (
-                          <div style={{ marginTop: '8px', fontSize: '0.73rem', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ marginTop: '8px', fontSize: '0.73rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <CheckCircle2 size={12} /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
                           </div>
                         )}
@@ -280,7 +280,7 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                     ))}
 
                     {group.tasks.length === 0 && (
-                      <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic', padding: '12px' }}>
+                      <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '12px' }}>
                         Chưa có công việc
                       </div>
                     )}
@@ -293,8 +293,8 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
           /* GANTT TIMELINE CHART VIEW */
           <div className="gantt-chart-wrapper" style={{ minWidth: '700px' }}>
             {/* Timeline Header Days */}
-            <div className="gantt-header-row" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', marginBottom: '12px' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#94a3b8' }}>Tên công việc</div>
+            <div className="gantt-header-row" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px', marginBottom: '12px' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Tên công việc</div>
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${timelineDays.length}, 1fr)`, gap: '4px', textAlign: 'center' }}>
                 {timelineDays.map((day, idx) => {
                   const isToday = day.toDateString() === new Date().toDateString();
@@ -303,7 +303,7 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                       key={idx} 
                       style={{ 
                         fontSize: '0.7rem', 
-                        color: isToday ? '#c084fc' : '#94a3b8',
+                        color: isToday ? 'var(--primary)' : 'var(--text-muted)',
                         fontWeight: isToday ? 700 : 500,
                         background: isToday ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
                         padding: '4px 2px',
@@ -328,23 +328,23 @@ export default function MindmapGanttView({ tasks = [], columns = [], onEditTask 
                 const endIndex = endDayIndex >= 0 ? endDayIndex : Math.min(startIndex + 2, timelineDays.length - 1);
                 const spanDays = Math.max(1, endIndex - startIndex + 1);
 
-                const statusColor = task.status === 'done' ? '#10b981' : task.status === 'in-progress' ? '#3b82f6' : '#f59e0b';
+                const statusColor = task.status === 'done' ? 'var(--success, #10b981)' : task.status === 'in-progress' ? 'var(--info, #3b82f6)' : 'var(--warning, #f59e0b)';
 
                 return (
                   <div 
                     key={task.id} 
                     className="gantt-task-row"
-                    style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--glass-border)' }}
                   >
                     {/* Left Task Label */}
                     <div 
                       onClick={() => onEditTask && onEditTask(task)}
                       style={{ cursor: 'pointer', paddingRight: '12px' }}
                     >
-                      <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {task.title}
                       </div>
-                      <div style={{ fontSize: '0.73rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Clock size={11} /> {task.endDate.toLocaleDateString('vi-VN')}
                       </div>
                     </div>

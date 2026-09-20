@@ -1,14 +1,22 @@
-/* Bản quyền thuộc về TKyl - Copyright © TKyl */
 import React, { useState } from 'react';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  setPersistence, 
+  browserLocalPersistence, 
+  browserSessionPersistence 
+} from 'firebase/auth';
 import toast from 'react-hot-toast';
-import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, CheckSquare, Square } from 'lucide-react';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -19,6 +27,10 @@ export default function AuthScreen() {
     }
     setLoading(true);
     try {
+      // Cấu hình lưu phiên làm việc (Ghi nhớ đăng nhập hay chỉ trong phiên làm việc)
+      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceType);
+
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
         toast.success('Đăng nhập thành công!');
@@ -45,6 +57,9 @@ export default function AuthScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
+      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceType);
+
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
@@ -98,19 +113,20 @@ export default function AuthScreen() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} autoComplete="off">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ position: 'relative' }}>
             <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', top: '50%', left: '12px', transform: 'translateY(-50%)' }} />
             <input 
               type="email" 
+              name="username"
               placeholder="Email của bạn" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input-field"
               style={{ width: '100%', paddingLeft: '2.5rem' }}
               disabled={loading}
-              autoComplete="new-password"
-              name="taskmaster-email"
+              autoComplete="username email"
+              required
             />
           </div>
           
@@ -118,15 +134,37 @@ export default function AuthScreen() {
             <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', top: '50%', left: '12px', transform: 'translateY(-50%)' }} />
             <input 
               type="password" 
+              name="password"
               placeholder="Mật khẩu (ít nhất 6 ký tự)" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input-field"
               style={{ width: '100%', paddingLeft: '2.5rem' }}
               disabled={loading}
-              autoComplete="new-password"
-              name="taskmaster-password"
+              autoComplete={isLogin ? "current-password" : "new-password"}
+              required
             />
+          </div>
+
+          <div 
+            onClick={() => setRememberMe(!rememberMe)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              cursor: 'pointer',
+              color: 'var(--text-muted)', 
+              fontSize: '0.85rem',
+              userSelect: 'none',
+              marginTop: '0.2rem'
+            }}
+          >
+            {rememberMe ? (
+              <CheckSquare size={16} color="var(--primary, #a855f7)" />
+            ) : (
+              <Square size={16} color="var(--text-muted)" />
+            )}
+            <span>Ghi nhớ đăng nhập trên thiết bị này</span>
           </div>
 
           <button 
